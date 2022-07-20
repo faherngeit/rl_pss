@@ -1,0 +1,51 @@
+diary on
+simLab = JoinExps(restore, paramRT, curve_per_exp = 20);
+[res, desc, restore] = TestRestoration(param);
+[08-Oct-2021 18:18:43] Checking for availability of parallel pool...
+[08-Oct-2021 18:18:43] Starting Simulink on parallel workers...
+[08-Oct-2021 18:18:43] Configuring simulation cache folder on parallel workers...
+[08-Oct-2021 18:18:43] Loading model on parallel workers...
+[08-Oct-2021 18:18:45] Running simulations...
+[08-Oct-2021 18:18:51] Completed 1 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 2 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 3 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 4 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 5 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 6 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 7 of 16 simulation runs
+[08-Oct-2021 18:18:51] Completed 8 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 9 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 10 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 11 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 12 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 13 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 14 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 15 of 16 simulation runs
+[08-Oct-2021 18:18:55] Completed 16 of 16 simulation runs
+[08-Oct-2021 18:18:55] Cleaning up parallel workers...
+Current compensations starts!
+[08-Oct-2021 18:18:59] Proceed 1 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 2 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 3 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 4 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 5 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 6 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 7 of 16 steps
+[08-Oct-2021 18:18:59] Proceed 8 of 16 steps
+[08-Oct-2021 18:19:00] Proceed 9 of 16 steps
+[08-Oct-2021 18:19:00] Proceed 10 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 11 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 12 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 13 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 14 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 15 of 16 steps
+[08-Oct-2021 18:19:01] Proceed 16 of 16 steps
+Тестирование алгоритма без апериодики при различной степени насыщения
+Elapsed time is 4.147981 seconds.
+diary off
+1= 0
+ 1= 0
+  ↑
+{Incorrect use of '=' operator. Assign a value to a variable using '=' and compare values for equality using '=='.
+} 
+diary off
