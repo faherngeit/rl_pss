@@ -49,7 +49,7 @@ class Actor(nn.Module):
 
 
 class Agent:
-    def __init__(self, state_dim=22, action_dim=6, load=True):
+    def __init__(self, state_dim=22, action_dim=6, load=False):
         self.actor = Actor(state_dim=state_dim, action_dim=action_dim)
         if load:
             self.actor.load_state_dict(torch.load(__file__[:-8] + "/best_agent.pth"))
