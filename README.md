@@ -1,2 +1,10 @@
-# rl_pss
-Scientific project about Power System Stabiliser based on reinforcement learning techniques 
+Для запуска расчета на одном случайном сценарии нужно вызвать функцию:
+
+simOutData = getScenarioSimOutData('scenariosNormState', 'IntMaxDeltaWs', 1.0e+06)
+
+На выходе будет объект, который нужно передать в питон. Столбец наград - крайний правый.
+
+В файле 'scenariosNormState' - 200 нормальных режимов.
+В файле 'scenariosLineSCB'   - 200 нормальных режимов + 600 режимов с отключением ВЛ или БСК (производные от 200 НР).
+
+В папке также лежат все функции и скрипты дял агента, поскольку при моделировании они должны быть в том же каталоге, что и модель. Отсюда и была ошибка "что-то там про double".
