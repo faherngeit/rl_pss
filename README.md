@@ -9,3 +9,5 @@ simOutData = getScenarioSimOutData('scenariosNormState', 'IntMaxDeltaWs', 1.0e+0
 В файле 'scenariosLineSCB'   - 200 нормальных режимов + 600 режимов с отключением ВЛ или БСК (производные от 200 НР).
 
 В папке также лежат все функции и скрипты дял агента, поскольку при моделировании они должны быть в том же каталоге, что и модель. Отсюда и была ошибка "что-то там про double".
+
+Для запуска через matlab engine есть pyRunEng.ipynb, в котором вызывается simWrapper.m <- обёртка над getScenarioSimOutData с приведением к двумерному массиву
