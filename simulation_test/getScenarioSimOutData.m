@@ -11,7 +11,8 @@ function simOutData = getScenarioSimOutData(scenarios_file, reward_type, penalty
 % загрузка файла сценариев
 scens = load(scenarios_file);
 % из пула выбирается 1 случайный сценарий
-scen = getRandomScenarios(1, scens.scenarios);
+%scen = getRandomScenarios(1, scens.scenarios);
+scen = scens.scenarios(1);
 % моделирование и запись результата
 simoutput = sim(scen);
 % расчет суммарной награды и траектории её изменения
@@ -32,7 +33,7 @@ for actionnum = 2:size(simOutData,3)
     %
     action_moment = actionnum * actionTimeStep;
     %
-    rewardIndex = find(simoutput.t>=action_moment,1,'first')
+    rewardIndex = find(simoutput.t>=action_moment,1,'first');
     %
     simOutData(1, size(simOutData,2), actionnum) = reward_list(rewardIndex);
 
