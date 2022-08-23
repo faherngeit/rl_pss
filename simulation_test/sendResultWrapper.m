@@ -16,6 +16,6 @@ end
 
 % jsonText = jsonencode(jsonArray, PrettyPrint = true);
 jsonText = jsonencode(jsonArray);
-agentServerResponse = pyrunfile('send_result.py', "response", pyJsonText = jsonText)
+agentServerResponse = pyrunfile('send_result.py', "response", pyJsonText = jsonText);
 
 end

@@ -1,0 +1,24 @@
+{
+    "Python": {
+        "agentSize": 5,
+        "stateSize": 4,
+        "agentAddress": "127.0.0.1:8001",
+        "senderPostfix": "/predict/"
+    },
+    "Matlab": {
+        "Model": {
+            "CustomPSS1": {
+                "LowerLimit": -1,
+                "UpperLimit": 1,
+                "Ts": 0.01,
+                "Tw": 0.01
+            },
+            "AgentModel": {
+                "Preiod": 1,
+                "Ns": 60,
+                "threshold": 1.1,
+                "initPSSParams": [1, 1, 1, 1, 1]
+            }
+        }
+    }
+}
