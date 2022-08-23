@@ -2,7 +2,7 @@ from agent import Agent
 import requests
 
 STATE_SIZE = 4
-ACTION_SIZE = 7
+ACTION_SIZE = 5
 DEFAULT_PATH = "matlab_sample.pth"
 REST_MODE = True
 
