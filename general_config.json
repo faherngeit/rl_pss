@@ -1,9 +1,12 @@
 {
     "Python": {
-        "agentSize": 5,
+        "actionSize": 5,
         "stateSize": 4,
-        "agentAddress": "127.0.0.1:8001",
-        "senderPostfix": "/predict/"
+        "agentHost": "127.0.0.1",
+        "agentPort": "8001",
+        "predictPostfix": "/predict/",
+        "trainPostfix": "/train/",
+        "actionScaler": [25, 1, 1, 1, 1]
     },
     "Matlab": {
         "Model": {
@@ -14,8 +17,8 @@
                 "Tw": 0.01
             },
             "AgentModel": {
-                "Preiod": 1,
-                "Ns": 60,
+                "agentTs_num": 1,
+                "agentTs_den": 60,
                 "threshold": 1.1,
                 "initPSSParams": [1, 1, 1, 1, 1]
             }
