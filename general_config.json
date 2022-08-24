@@ -3,7 +3,7 @@
         "actionSize": 5,
         "stateSize": 4,
         "agentHost": "127.0.0.1",
-        "agentPort": "8001",
+        "agentPort": 8001,
         "predictPostfix": "/predict/",
         "trainPostfix": "/train/",
         "actionScaler": [25, 1, 1, 1, 1]
