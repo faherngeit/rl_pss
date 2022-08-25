@@ -1,4 +1,4 @@
-function [reward, reward_list] = get_reward(simoutput, time_gain, reward_type)
+function reward_list = get_reward(simoutput, time_gain, reward_type)
     % Метод расчета награды по относительным углам и скоростям генераторов системы.
     % Ввод:
     %   reward_type - вид награды:
