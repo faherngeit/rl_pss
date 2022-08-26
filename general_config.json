@@ -21,7 +21,63 @@
                 "agentTs_den": 60,
                 "threshold": 1.1,
                 "initPSSParams": [1, 1, 1, 1, 1]
+            },
+            "LineParameters": {
+                "r1_km": 0.0529,
+                "r0_km": 1.61,
+                "l1_km": 0.0014,
+                "l0_km": 0.0061,
+                "c1_km": 8.7749e-09,
+                "c0_km": 5.2489e-09
+            },
+            "Area_1": {
+                "LoadParameters": {
+                    "p__l1": 9.00e+08,
+                    "qi_l1": 1.00e+08,
+                    "qc_l1": 0.50e+08
+                },
+                "GensParameters": {
+                    "p_g1": 0.675e+09,
+                    "p_g2": 0.675e+09
+                }
+            },
+            "Area_2": {
+                "LoadParameters": {
+                    "p__l1": 1.50e+09,
+                    "qi_l1": 1.00e+08,
+                    "qc_l1": 0.50e+08
+                },
+                "GensParameters": {
+                    "p_g1": 0.675e+09,
+                    "p_g2": 0.675e+09
+                }
             }
-        }
+
+        },
+        "Scenario_Generation": {
+
+            "p__load_std_pu": 0.05,
+            "qi_load_std_pu": 0.10,
+            "qc_load_std_pu": 0.10,
+
+            "p__gens_std_pu": 0.025,
+
+            "min_line_temp": -30,
+            "max_line_temp": 30,
+
+            "r0_line_std_pu": 0.05,
+            "l1_line_std_pu": 0.02,
+            "l0_line_std_pu": 0.02,
+            "c1_line_std_pu": 0.03,
+            "c0_line_std_pu": 0.03,
+
+            "disturb_tmin": 1.1,
+            "disturb_tmax": 10.0,
+
+            "sc_breaking_time_main": 0.1,
+            "sc_breaking_time_rsrv": 0.3
+
+
+        }            
     }
 }
