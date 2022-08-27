@@ -7,7 +7,7 @@ function [scenarios_NormStates, ...
 %           scenarios_2phSCg_gen, ...
 %           scenarios_3phSCgen
 
-config = jsonDataExtract("general_config.json");
+config = jsonDataExtract("../general_config.json");
 
 % Формируется перечень случайных нормальных режимов
 statesNorm = prepareStates(states_quantity,model,config);
