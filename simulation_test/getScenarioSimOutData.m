@@ -13,7 +13,7 @@ scens = load(scenarios_file);
 % из пула выбирается n случайных сценариев
 scen = getRandomScenarios(scen_quan, scens.scenarios);
 % моделирование и запись результатов
-simoutputs = parsim(scen);
+simoutputs = sim(scen);
 
 % Массив объектов результатов моделирования:
 % result_.A_simOutData

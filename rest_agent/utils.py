@@ -10,19 +10,14 @@ class AgentDescription:
     agentPort: int
     predictPostfix: str
     trainPostfix: str
+    reloadPostfix: str
     actionScaler: list
 
     @staticmethod
     def from_file(path: str):
         with open(path, "r") as f:
             data = json.load(f)['Python']
-            return AgentDescription(
-                actionSize=data["actionSize"],
-                stateSize=data["stateSize"],
-                agentHost=data["agentHost"],
-                agentPort=data["agentPort"],
-                predictPostfix=data["predictPostfix"],
-                trainPostfix=data["trainPostfix"],
-                actionScaler=data["actionScaler"]
-            )
+            return AgentDescription(**data)
 
+
+#%%

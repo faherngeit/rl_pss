@@ -1,5 +1,6 @@
 from agent import Agent
 import requests
+import numpy as np
 
 STATE_SIZE = 4
 ACTION_SIZE = 5
@@ -7,7 +8,7 @@ DEFAULT_PATH = "matlab_sample.pth"
 REST_MODE = True
 
 if REST_MODE:
-    data = [x for x in pystate]
+    data = np.asarray(pystate, dtype='float').tolist()
     response = requests.post(
         "http://127.0.0.1:8001/predict/",
         json={"state": data},
