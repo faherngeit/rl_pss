@@ -1,13 +1,16 @@
 {
     "Python": {
         "actionSize": 5,
-        "stateSize": 4,
+        "stateSize": [4, 60],
         "agentHost": "127.0.0.1",
         "agentPort": 8001,
         "predictPostfix": "/predict/",
         "trainPostfix": "/train/",
         "reloadPostfix": "/reload/",
-        "actionScaler": [25, 1, 1, 1, 1]
+        "agentPath": "/models/",
+        "agentNamePrefix": "agent",
+        "actionScaler": [25, 1, 1, 1, 1],
+        "device": "cpu"
     },
     "Matlab": {
         "Model": {

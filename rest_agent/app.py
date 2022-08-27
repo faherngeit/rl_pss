@@ -10,10 +10,9 @@ from datetime import datetime
 from agent import Agent
 from utils import AgentDescription
 
-AGENT_PATH = "simulation_test/matlab_sample.pth"
 CONFIG_PATH = "general_config.json"
 STATE_SIZE = 4
-ACTION_SIZE = 7
+ACTION_SIZE = 5
 
 app = FastAPI()
 agent = None
@@ -34,8 +33,9 @@ class ResultEntity(BaseModel):
 @app.on_event(event_type="startup")
 def load_services():
     global agent
-    agent = Agent(state_dim=configuration.stateSize, action_dim=configuration.actionSize)
-    agent.load(AGENT_PATH)
+    # agent = Agent(state_dim=configuration.stateSize, action_dim=configuration.actionSize)
+    agent = Agent(state_dim=STATE_SIZE, action_dim=ACTION_SIZE)
+    agent.load("./" + configuration.agentPath + configuration.agentNamePrefix + "_last.pth")
 
 @app.get("/")
 def root():
@@ -55,15 +55,14 @@ async def predict(request: StateEntity):
 @app.post(configuration.trainPostfix)
 async def train(request: ResultEntity):
     result = request.result
-    with open("new_log.txt", 'a') as f:
-        f.write(datetime.now().isoformat() + "\n")
-        f.write(result.__repr__() + "\n")
-        f.write("\n")
+    data = json.loads(result)
+    with open("new_log.txt", 'w') as f:
+        f.write(json.dumps({"time": datetime.now().isoformat(), "result": result}, indent=4))
     return("OK")
 
 @app.get(configuration.reloadPostfix)
 async def reload():
-    agent.load(AGENT_PATH)
+    agent.load("./" + configuration.agentPath + configuration.agentNamePrefix + "_last.pth")
     return("Reloaded")
 
 if __name__ == "__main__":

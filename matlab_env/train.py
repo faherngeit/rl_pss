@@ -1,6 +1,3 @@
-import pybullet_envs
-# Don't forget to install PyBullet!
-from gym import make
 import numpy as np
 import torch
 from torch import nn
@@ -9,8 +6,11 @@ from torch.nn import functional as F
 from torch.optim import Adam, SGD
 import random
 from datetime import datetime
+import matlab.engine
 
-ENV_NAME = "Walker2DBulletEnv-v0"
+from rest_agent.utils import AgentDescription
+
+CONFIG_PATH = "general_config.json"
 
 LAMBDA = 0.95
 GAMMA = 0.99
@@ -26,7 +26,7 @@ BATCH_SIZE = 64
 MIN_TRANSITIONS_PER_UPDATE = 2048
 MIN_EPISODES_PER_UPDATE = 16
 
-ITERATIONS = 3000
+ITERATIONS = 10
 
 
 def compute_lambda_returns_and_gae(trajectory):
@@ -46,7 +46,7 @@ def compute_lambda_returns_and_gae(trajectory):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, action_scaler):
         super().__init__()
         # Advice: use same log_sigma for all states to improve stability
         # You can do this by defining log_sigma as nn.Parameter(torch.zeros(...))
@@ -63,11 +63,12 @@ class Actor(nn.Module):
             nn.ReLU(),
         )
         self.mean = nn.Linear(256, action_dim)
-        self.sigma = nn.Sequential(
-            nn.Linear(256, action_dim),
-            nn.ELU()
-        )
-        # self.sigma = torch.zeros(action_dim)
+        # self.sigma = nn.Sequential(
+        #     nn.Linear(256, action_dim),
+        #     nn.ELU()
+        # )
+        self.action_scaler = action_scaler
+        self.sigma = nn.Parameter(torch.zeros(action_dim))
 
     def compute_proba(self, state, action):
         # Returns probability of action according to current policy and distribution of actions
@@ -80,10 +81,11 @@ class Actor(nn.Module):
         # Remember: agent is not deterministic, sample actions from distribution (e.g. Gaussian)
         latent = self.model(state)
         mean = self.mean(latent)
-        sigma = torch.exp(-self.sigma(latent))
+        # sigma = torch.exp(-self.sigma(latent))
+        sigma = torch.exp(self.sigma)
         distribution = Normal(mean, sigma)
         action = distribution.sample()
-        tanh_action = torch.tanh(action)
+        tanh_action = torch.sigmoid(action) * self.action_scaler
         return tanh_action, action, distribution
 
 
@@ -105,8 +107,8 @@ class Critic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, state_dim, action_dim, device='cpu'):
+        self.device = device
         self.actor = Actor(state_dim, action_dim).to(self.device)
         self.critic = Critic(state_dim).to(self.device)
         self.actor_optim = Adam(self.actor.parameters(), ACTOR_LR, amsgrad=True)
@@ -138,7 +140,7 @@ class PPO:
             v = target_value[idx]   # Estimated by lambda-returns
             adv = advantage[idx]    # Estimated by generalized advantage estimation
 
-            # TODO: Update actor here
+            #Update actor here
             log_prob, distribution = self.actor.compute_proba(s, a)
             ratio = torch.exp(log_prob - op)
             surr1 = ratio * adv
@@ -148,7 +150,7 @@ class PPO:
             actor_loss.backward()
             self.actor_optim.step()
 
-            # TODO: Update critic here
+            #Update critic here
             critic_value = self.critic.get_value(s)
             critic_loss = nn.MSELoss()(critic_value.squeeze(-1), v)
             self.critic_optim.zero_grad()
@@ -207,18 +209,19 @@ def sample_episode(env, agent):
 def start(load_model=False, colab=False):
     torch.manual_seed(12345)
     np.random.seed(3141592)
-    env = make(ENV_NAME)
-    ppo = PPO(state_dim=env.observation_space.shape[0], action_dim=env.action_space.shape[0])
+    config = AgentDescription.default_config()
+    eng = matlab.engine.start_matlab()
+    eng.cd("../matlab_env/")
+    out = eng.simWrapper
+
+    ppo = PPO(state_dim=config.stateSize, action_dim=config.actionSize)
     if load_model:
         ppo.actor.load_state_dict(torch.load(__file__[:-8] + "/best_agent_.pth"))
         ppo.critic.load_state_dict(torch.load(__file__[:-8] + "/critic_best_agent_.pth"))
 
     log_str = []
 
-    splt_str = '\n'
-    for _ in range(80):
-        splt_str += '#'
-    splt_str += '\n'
+    splt_str = '\n' + '#' * 80 + '\n'
     log_str.append(splt_str)
     if load_model:
         log_str.append("Pretrained model has been loaded!\n")
@@ -234,27 +237,23 @@ def start(load_model=False, colab=False):
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
-    if not colab:
-        with open("train_log.txt", "a") as myfile:
-            for st in log_str:
-                myfile.write(st)
+    with open("train_log.txt", "a") as myfile:
+        myfile.write(log_str + '\n')
 
-    state = env.reset()
     episodes_sampled = 0
     steps_sampled = 0
     max_reward = 0
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
     print(msg)
-    if colab:
-        log_str.append(msg)
-    else:
-        with open("train_log.txt", "a") as myfile:
-            myfile.write(msg+'\n')
+    with open("train_log.txt", "a") as myfile:
+        myfile.write(msg+'\n')
 
     for i in range(ITERATIONS):
         trajectories = []
         steps_ctn = 0
+
+        exp_data = eng.simWrapper('scenariosNormState', 'IntMaxDeltaWs', 0, 1)
 
         while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
             traj = sample_episode(env, ppo)
@@ -274,14 +273,10 @@ def start(load_model=False, colab=False):
             else:
                 with open("train_log.txt", "a") as myfile:
                     myfile.write(msg+'\n')
-            ppo.save('agent.pth')
+            ppo.save(config.agentPath + config.agentNamePrefix + "_last.pth")
             if np.mean(rewards) > max_reward:
                 max_reward = np.mean(rewards)
-                ppo.save('best_agent.pth')
-    if colab:
-        with open("train_log.txt", "a") as myfile:
-            for st in log_str:
-                myfile.write(st)
+                ppo.save(config.agentPath + config.agentNamePrefix + "_best.pth")
 
 
 if __name__ == "__main__":
