@@ -7,8 +7,9 @@ from torch.optim import Adam, SGD
 import random
 from datetime import datetime
 import matlab.engine
+import json
 
-from rest_agent.utils import AgentDescription
+from utils import AgentDescription
 
 CONFIG_PATH = "general_config.json"
 
@@ -46,7 +47,7 @@ def compute_lambda_returns_and_gae(trajectory):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim, action_scaler):
+    def __init__(self, state_dim, action_dim):
         super().__init__()
         # Advice: use same log_sigma for all states to improve stability
         # You can do this by defining log_sigma as nn.Parameter(torch.zeros(...))
@@ -67,7 +68,7 @@ class Actor(nn.Module):
         #     nn.Linear(256, action_dim),
         #     nn.ELU()
         # )
-        self.action_scaler = action_scaler
+        # self.action_scaler = action_scaler
         self.sigma = nn.Parameter(torch.zeros(action_dim))
 
     def compute_proba(self, state, action):
@@ -85,7 +86,8 @@ class Actor(nn.Module):
         sigma = torch.exp(self.sigma)
         distribution = Normal(mean, sigma)
         action = distribution.sample()
-        tanh_action = torch.sigmoid(action) * self.action_scaler
+        # tanh_action = torch.sigmoid(action) * self.action_scaler
+        tanh_action = torch.sigmoid(action)
         return tanh_action, action, distribution
 
 
@@ -162,21 +164,41 @@ class PPO:
 
     def get_value(self, state):
         with torch.no_grad():
-            state = torch.FloatTensor(np.array([state])).to(self.device)
+            state.to(self.device)
             value = self.critic.get_value(state)
         return value.item()
 
     def act(self, state):
         with torch.no_grad():
-            state = torch.FloatTensor(np.array([state])).to(self.device)
+            state.to(self.device)
             action, pure_action, distr = self.actor.act(state)
             log_prob = distr.log_prob(pure_action).sum(-1)
             # log_prob = distr.log_prob(pure_action)
-        return action.cpu().numpy()[0], pure_action.cpu().numpy()[0], log_prob.cpu().item()
+        return action, pure_action, log_prob
 
     def save(self, name="agent.pkl"):
         torch.save(self.actor.state_dict(), name)
         torch.save(self.critic.state_dict(), 'critic_' + name)
+
+    def load(self, name="agent.pkl"):
+        self.actor.load_state_dict(torch.load(name))
+        self.critic.load_state_dict(torch.load('critic_' + name))
+        self.actor.eval()
+        self.critic.eval()
+        self.actor.to(self.device)
+        self.critic.to(self.device)
+
+    def perform(self):
+        self.actor.to('cpu')
+        self.critic.to('cpu')
+        self.actor.eval()
+        self.critic.eval()
+
+    def train_(self):
+        self.actor.to(self.device)
+        self.critic.to(self.device)
+        self.actor.train()
+        self.critic.train()
 
 
 def evaluate_policy(env, agent, episodes=5):
@@ -206,15 +228,28 @@ def sample_episode(env, agent):
     return compute_lambda_returns_and_gae(trajectory)
 
 
+def create_trajectory(log_path: str):
+    with open(log_path, 'r') as f:
+        data = json.load(f)
+    trajectories = []
+    for exp in data:
+        traj = []
+        for ep in exp['data']:
+            state = [x[-1] for x in ep['state']] # TODO: remove this hack
+            traj.append((state, ep['pureAction'], ep['reward'], ep['probability'][0], ep['probability'][1]))
+        trajectories.append(compute_lambda_returns_and_gae(traj))
+    return trajectories
+
+
 def start(load_model=False, colab=False):
     torch.manual_seed(12345)
     np.random.seed(3141592)
-    config = AgentDescription.default_config()
+    config = AgentDescription.from_file(CONFIG_PATH)
     eng = matlab.engine.start_matlab()
-    eng.cd("../matlab_env/")
-    out = eng.simWrapper
+    eng.cd("./matlab_env/")
 
-    ppo = PPO(state_dim=config.stateSize, action_dim=config.actionSize)
+    #TODO : provide proper state dim
+    ppo = PPO(state_dim=config.stateSize[0], action_dim=config.actionSize)
     if load_model:
         ppo.actor.load_state_dict(torch.load(__file__[:-8] + "/best_agent_.pth"))
         ppo.critic.load_state_dict(torch.load(__file__[:-8] + "/critic_best_agent_.pth"))
@@ -238,7 +273,7 @@ def start(load_model=False, colab=False):
                "\n"
     log_str.append(strt_msg)
     with open("train_log.txt", "a") as myfile:
-        myfile.write(log_str + '\n')
+        myfile.write('\n'.join(log_str))
 
     episodes_sampled = 0
     steps_sampled = 0
@@ -253,14 +288,15 @@ def start(load_model=False, colab=False):
         trajectories = []
         steps_ctn = 0
 
-        exp_data = eng.simWrapper('scenariosNormState', 'IntMaxDeltaWs', 0, 1)
+        request = eng.simWrapper('scenariosNormState', 'IntMaxDeltaWs', 0, 4)
+        trajectories = create_trajectory("./trajectory_log.txt")
 
-        while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
-            traj = sample_episode(env, ppo)
-            steps_ctn += len(traj)
-            trajectories.append(traj)
-        episodes_sampled += len(trajectories)
-        steps_sampled += steps_ctn
+        # while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
+        #     traj = sample_episode(env, ppo)
+        #     steps_ctn += len(traj)
+        #     trajectories.append(traj)
+        # episodes_sampled += len(trajectories)
+        # steps_sampled += steps_ctn
 
         ppo.update(trajectories)
 
@@ -268,11 +304,8 @@ def start(load_model=False, colab=False):
             rewards = evaluate_policy(env, ppo, 20)
             msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {np.mean(rewards)}, Reward std: {np.std(rewards)}, Episodes: {episodes_sampled}, Steps: {steps_sampled}"
             print(msg)
-            if colab:
-                log_str.append(msg)
-            else:
-                with open("train_log.txt", "a") as myfile:
-                    myfile.write(msg+'\n')
+            with open("train_log.txt", "a") as myfile:
+                myfile.write(msg+'\n')
             ppo.save(config.agentPath + config.agentNamePrefix + "_last.pth")
             if np.mean(rewards) > max_reward:
                 max_reward = np.mean(rewards)

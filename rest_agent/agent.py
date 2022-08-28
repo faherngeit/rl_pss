@@ -45,7 +45,8 @@ class Actor(nn.Module):
         distribution = Normal(mean, sigma)
         action = distribution.sample()
         tanh_action = torch.tanh(action)
-        return tanh_action, action, distribution
+        log_prob = distribution.log_prob(action).sum(-1)
+        return tanh_action, action, log_prob
 
 
 class Agent:

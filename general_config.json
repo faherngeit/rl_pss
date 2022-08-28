@@ -9,7 +9,7 @@
         "reloadPostfix": "/reload/",
         "agentPath": "/models/",
         "agentNamePrefix": "agent",
-        "actionScaler": [25, 1, 1, 1, 1],
+        "actionScaler": [25, 1, 1, 5, 5],
         "device": "cpu"
     },
     "Matlab": {
