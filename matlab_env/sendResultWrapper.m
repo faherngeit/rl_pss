@@ -11,6 +11,7 @@ for i = 1 : size(result, 2)
         jsonObject.t = j;
         jsonObject.action = result(i).A_simOutData(1, 1:ACTION_SIZE, j);
         jsonObject.pureAction = result(i).A_simOutData(1, (ACTION_SIZE+1):(ACTION_SIZE*2) , j);
+        jsonObject.probability = result(i).A_simOutData(1, (ACTION_SIZE*2 + 1):(ACTION_SIZE*3) , j);
         jsonObject.reward = result(i).Reward(j);
         jsonObject.state = result(i).A_state(:,:,j);
 
