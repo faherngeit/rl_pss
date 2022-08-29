@@ -1,5 +1,4 @@
-function [scenarios_NormStates, ...
-          scenarios_LinesSCB] = prepareScenarios(states_quantity,model)
+function [scenarios_NormStates] = prepareScenarios(states_quantity,model)
 % Метод формирует список сценариев для моделирования при обучении
 % , ...
 %           scenarios_LinesSCB, ...
@@ -12,20 +11,25 @@ config = jsonDataExtract("../general_config.json");
 % Формируется перечень случайных нормальных режимов
 statesNorm = prepareStates(states_quantity,model,config);
 scenarios_NormStates = prepareSimParam_NormStates(statesNorm);
-scenarios_NormStates = prepareOutputData(model,scenarios_NormStates, true); 
-save("scenarios_NormalStates.mat","scenarios_NormStates");
+scenarios_NormStates = prepareOutputData(model,scenarios_NormStates, false); 
+for i = 1:size(scenarios_NormStates,2)
+    scenarios_NormStates(i).SimInput.UserString = num2str(1) + ";" + num2str(i);
+end
+scenarios = scenarios_NormStates;
+save("scenarios_NormalStates.mat","scenarios");
 
-% Отключение ВЛ
-Events_Line = prepareEvents_Line(statesNorm(1).model, config);
-scenarios_line = prepareSimParam_Events(statesNorm, Events_Line);
-scenarios_line = prepareOutputData(model,scenarios_line, true); 
-scenarios_LinesSCB = [scenarios_NormStates, scenarios_line];
-% Переключения БСК
-Events_SCB = prepareEvents_SCB(statesNorm(1).model, config);
-scenarios_SCB = prepareSimParam_Events(statesNorm, Events_SCB);
-scenarios_SCB = prepareOutputData(model,scenarios_SCB, true);
-scenarios_LinesSCB = [scenarios_LinesSCB, scenarios_SCB];
-save("scenarios_LineSCB.mat","scenarios_LinesSCB");
+% % Отключение ВЛ
+% Events_Line = prepareEvents_Line(statesNorm(1).model, config);
+% scenarios_line = prepareSimParam_Events(statesNorm, Events_Line);
+% scenarios_line = prepareOutputData(model,scenarios_line, true); 
+% scenarios_LinesSCB = [scenarios_NormStates, scenarios_line];
+% % Переключения БСК
+% Events_SCB = prepareEvents_SCB(statesNorm(1).model, config);
+% scenarios_SCB = prepareSimParam_Events(statesNorm, Events_SCB);
+% scenarios_SCB = prepareOutputData(model,scenarios_SCB, true);
+% scenarios_LinesSCB = [scenarios_LinesSCB, scenarios_SCB];
+% scenarios = scenarios_LinesSCB;
+% save("scenarios_LineSCB.mat","scenarios");
 
 % % 1ф КЗ на ВЛ, время отключения ОЗ
 % Events_1phSCg_line_main = prepareEvents_1phSCg_A_3ph_line(statesNorm(1).model, config, 1);
