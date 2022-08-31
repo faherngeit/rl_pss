@@ -48,6 +48,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
     Mech3_2 = str2num(get_param([simoutput.SimulationMetadata.ModelInfo.ModelName,'/Area 2/M3 900 MVA'],'Mechanical'));
     Mech4_2 = str2num(get_param([simoutput.SimulationMetadata.ModelInfo.ModelName,'/Area 2/M4 900 MVA'],'Mechanical'));
     inertia_consts = [Mech1_1(1) Mech2_1(1) Mech3_2(1) Mech4_2(1)];
+    wnom = 2*180*60;
 
     % Вектора углов, скоростей и времени расчета
     delta_list = simoutput.D;
@@ -57,7 +58,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
     % Инициализируется переменная награды и список её значения по
     % моментам времени
     reward = 0;
-    reward_list = eye(size(w_list,1),1);
+    reward_list = zeros(size(w_list,1),1);
     % Массив возможных комбинаций генераторов для расчета максимальной
     % разницы углов.
     combos = nchoosek(1:size(w_list,2), 2);
@@ -71,7 +72,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
 
             % Максимальная разница углов
             case 'IntMaxDeltaD'
-                delta_delta = eye(size(combos,1),1);
+                delta_delta = zeros(size(combos,1),1);
                 % По комбинациям генераторов
                 for combnum = 1:(size(combos,1))
                     % Расчет модуля наибольшей разницы углов роторов
@@ -86,7 +87,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
                 % Скорость центра масс
                 ds = 0;
                 ms = 0;
-                W_list = 2*180*60*w_list;
+                W_list = wnom*w_list;
 
                 % Для всех генераторов в момент времени t
                 for gennum = 1:(size(W_list,2))
@@ -97,7 +98,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
                 % постоянным инцерции генераторов
                 ds = ds/ms;
                 
-                delta_w = eye(size(W_list,2),1);
+                delta_w = zeros(size(W_list,2),1);
                 % Для всех генераторов в момент времени t
                 for gennum = 1:(size(W_list,2))
                     delta_w(gennum) = abs(W_list(t, gennum) - ds);
@@ -109,7 +110,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
             case 'IntSW'
                 m_w = 0;
                 s_w = 0;
-                W_list = 2*180*60*w_list;
+                W_list = wnom*w_list;
 
                 % Для всех генераторов в момент времени t
                 for gennum = 1:(size(W_list,2))
@@ -131,7 +132,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
                 % Скорость центра масс
                 ws = 0;
                 ms = 0;
-                W_list = 2*180*60*w_list;
+                W_list = wnom*w_list;
 
                 % Для всех генераторов в момент времени t
                 for gennum = 1:(size(W_list,2))
@@ -154,7 +155,7 @@ function reward_list = get_reward(simoutput, time_gain, reward_type)
                 % Угол центра масс
                 ds = 0;
                 ms = 0;
-                W_list = 2*180*60*w_list;
+                W_list = wnom*w_list;
 
                 % Для всех генераторов в момент времени t
                 for gennum = 1:(size(W_list,2))
