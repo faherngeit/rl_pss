@@ -5,7 +5,7 @@ config = jsonDataExtract("../general_config.json");
 link = ['http://', config.Python.agentHost,':', num2str(config.Python.agentPort), config.Python.trainPostfix];
 ACTION_SIZE = config.Python.actionSize;
 
-jsonGlobalArray = [];
+jsonGlobalArray = {};
 for i = 1 : size(result, 2)
     jsonInternalEpisodeArray = [];
     for j = 1 : size(result(i).A_state, 3)
