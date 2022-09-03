@@ -1,4 +1,4 @@
-function [result, simLog] = getScenarioSimOutData(scenarios_file, scen_quan, reward_type, penalty, results_directory)
+function [result, simLog] = getScenarioSimOutData(scenarios_file, scen_quan, reward_type, penalty, result_directory)
 % Функция выполняет загрузку пула сценариев, выбор случайного,
 % моделирование процесса, расчета награды и возвращает 3-хмерный массив для
 % обучения с добавлением рассчитанной награды.
@@ -24,9 +24,12 @@ for scennum = size(scenarios, 2):-1:1
     % result_.A_state
     % result_.Reward
     result(scennum) = handleParsimResults(simoutput(scennum), reward_type, penalty);
-
+    
+    
+    
+    
     % Запись результатов испытания в файл
     simLog(scennum) = saveSampleResults(scenarios(scennum), result(scennum), ...
-                      simoutput(scennum), reward_type, results_directory);
+                      simoutput(scennum), reward_type, result_directory);
 end
 end
