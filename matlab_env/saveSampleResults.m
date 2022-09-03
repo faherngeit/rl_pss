@@ -9,7 +9,9 @@ simLog.reward_agent = get_reward(simoutputs, true, reward_type);
 % Записывается информция о работе агента (пусть будет): state, actions, reward
 simLog.result_agent = results;
 
-% Сохранение файла результатов с меткой времени
-save(results_directory + "simLog " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') + ".mat","simLog");
+if(results_directory ~= "")
+    % Сохранение файла результатов с меткой времени
+    save(results_directory + "simLog " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') + ".mat","simLog");
+end
 
 end
