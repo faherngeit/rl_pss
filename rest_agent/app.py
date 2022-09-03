@@ -51,21 +51,21 @@ async def predict(request: StateEntity):
     # data = [x[-1] for x in request.state]
     # state = torch.tensor(data, dtype=torch.float32)
     state = torch.tensor(request.state, dtype=torch.float32)
-    action, pure_action, log_prob = agent.act(state)
-    value = agent.get_value(state)
+    action, pure_action, log_prob = agent.act(state.unsqueeze(0))
+    value = agent.get_value(state.unsqueeze(0))
     end = time.time()
-    log_prob_ls = [log_prob.item(), value, 0.0, 0.0, 0.0]
+    log_prob_ls = [torch.squeeze(log_prob).item(), value, 0.0, 0.0, 0.0]
     log_prob_ls[1] = value
     log_msg = json.dumps({"time": datetime.now().isoformat(),
                           "duration": end - start,
-                          "state": state.tolist(),
-                          "action": action.squeeze(0).tolist(),
-                          "pure_action": pure_action.squeeze(0).tolist(),
+                          "state": torch.squeeze(state).tolist(),
+                          "action": torch.squeeze(action).tolist(),
+                          "pure_action": torch.squeeze(pure_action).tolist(),
                           "log_prob": log_prob_ls}, indent=4)
     with open(configuration.logPath + "state_log.txt", 'a') as f:
         f.write(log_msg + "\n")
-    return PredictionEntity(action=action.squeeze(0).tolist(),
-                            pure_action=pure_action.squeeze(0).tolist(),
+    return PredictionEntity(action=torch.squeeze(action).tolist(),
+                            pure_action=torch.squeeze(pure_action).tolist(),
                             log_prob=log_prob_ls)
 
 
@@ -80,10 +80,10 @@ async def train(request: ResultEntity):
     return("OK")
 
 
-@app.get(configuration.reloadPostfix) #TODO: force train pipeline to reload agent
+@app.get(configuration.reloadPostfix)
 async def reload():
-    path = "../" + configuration.agentPath + configuration.agentNamePrefix + "_last.pth"
-    agent.load(path)
+    agent.load(name=configuration.agentNamePrefix + '_last.pth', folder=configuration.agentPath)
+    path = configuration.agentPath + configuration.agentNamePrefix + '_last.pth'
     print(f"USER:     New agent version was successfully reloaded from: {path}")
     return("Reloaded")
 

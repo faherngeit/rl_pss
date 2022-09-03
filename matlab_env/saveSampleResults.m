@@ -1,4 +1,4 @@
-function simLog = saveSampleResults(scenario,results,simoutputs,reward_type,results_directory)
+function simLog = saveSampleResults(scenario,results,simoutputs,reward_type,results_directory,postfix)
 
 % Выходной файл содержит все данные сценария
 simLog = scenario;
@@ -11,7 +11,7 @@ simLog.result_agent = results;
 
 if(results_directory ~= "")
     % Сохранение файла результатов с меткой времени
-    save(results_directory + "simLog " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') + ".mat","simLog");
+    save(results_directory + "simLog " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') + postfix + ".mat","simLog");
 end
 
 end

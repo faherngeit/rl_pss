@@ -16,17 +16,21 @@ scens = load(scenarios_file);
 % из пула выбирается n случайных сценариев
 scenarios = getRandomScenarios(scen_quan, scens.scenarios);
 % моделирование и запись результатов для каждого отобранного сценария
-for scennum = size(scenarios, 2):-1:1
-    simoutput(scennum) = sim(scenarios(scennum).SimInput);
 
-    % Массив объектов результатов моделирования:
-    % result_.A_simOutData
-    % result_.A_state
-    % result_.Reward
-    result(scennum) = handleParsimResults(simoutput(scennum), reward_type, penalty);
+simInputs(1:size(scenarios, 2)) = scenarios(1:size(scenarios, 2)).SimInput;
 
-    % Запись результатов испытания в файл
+% Выполняется моделирование
+simoutput = sim(simInputs);
+
+% Массив объектов результатов моделирования:
+% result_.A_simOutData
+% result_.A_state
+% result_.Reward
+result = handleParsimResults(simoutput, reward_type, penalty);
+
+% Запись результатов испытаний в файлы
+for scennum = size(scenarios, 2):-1:1  
     simLog(scennum) = saveSampleResults(scenarios(scennum), result(scennum), ...
-                      simoutput(scennum), reward_type, results_directory);
+                                        simoutput(scennum), reward_type, results_directory, "_" + num2str(scennum));
 end
 end

@@ -25,8 +25,8 @@ CRITIC_LR = 4e-4
 
 CLIP = 0.2
 ENTROPY_COEF = 2e-2
-BATCHES_PER_UPDATE = 64
-BATCH_SIZE = 64
+BATCHES_PER_UPDATE = 16
+BATCH_SIZE = 16
 
 MIN_TRANSITIONS_PER_UPDATE = 2048
 MIN_EPISODES_PER_UPDATE = 16
@@ -103,7 +103,7 @@ class Actor(nn.Module):
         # Remember: agent is not deterministic, sample actions from distribution (e.g. Gaussian)
         short_rep = self.short_window(state)
         long_rep = self.long_window(state)
-        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=0))
+        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=1))
         mean = self.mean(latent)
         # sigma = torch.exp(-self.sigma(latent))
         sigma = torch.exp(self.sigma)
@@ -151,7 +151,7 @@ class Critic(nn.Module):
     def get_value(self, state):
         short_rep = self.short_window(state)
         long_rep = self.long_window(state)
-        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=0))
+        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=1))
         return self.mean(latent)
 
 
@@ -180,6 +180,9 @@ class PPO:
         advantage = np.array(advantage)
         advantage = torch.FloatTensor((advantage - advantage.mean()) / (advantage.std() + 1e-8)).to(self.device)
 
+        actor_loss_ls = []
+        critic_loss_ls = []
+
         for _ in range(BATCHES_PER_UPDATE):
             # idx = np.random.randint(0, len(transitions), BATCH_SIZE)  # Choose random batch
             idx = torch.randint(0, len(transitions), (BATCH_SIZE,)).to(self.device)
@@ -195,6 +198,7 @@ class PPO:
             surr1 = ratio * adv
             surr2 = torch.clamp(ratio, 1 - CLIP, 1 + CLIP) * adv
             actor_loss = (-torch.min(surr1, surr2)).mean() - ENTROPY_COEF * distribution.entropy().mean()
+            actor_loss_ls.append(actor_loss.item())
             self.actor_optim.zero_grad()
             actor_loss.backward()
             self.actor_optim.step()
@@ -202,12 +206,14 @@ class PPO:
             # Update critic here
             critic_value = self.critic.get_value(s)
             critic_loss = nn.MSELoss()(critic_value.squeeze(-1), v)
+            critic_loss_ls.append(critic_loss.item())
             self.critic_optim.zero_grad()
             critic_loss.backward()
             self.critic_optim.step()
-
         # self.critic_scheduler.step()
         # self.actor_scheduler.step()
+        return np.mean(actor_loss_ls), np.mean(critic_loss_ls)
+
 
     def get_value(self, state):
         with torch.no_grad():
@@ -223,13 +229,13 @@ class PPO:
             # log_prob = distr.log_prob(pure_action)
         return action, pure_action, log_prob
 
-    def save(self, name="agent.pkl"):
-        torch.save(self.actor.state_dict(), name)
-        torch.save(self.critic.state_dict(), 'critic_' + name)
+    def save(self, name="agent.pkl", folder=""):
+        torch.save(self.actor.state_dict(), folder + name)
+        torch.save(self.critic.state_dict(), folder + 'critic_' + name)
 
-    def load(self, name="agent.pkl"):
-        self.actor.load_state_dict(torch.load(name))
-        self.critic.load_state_dict(torch.load('critic_' + name))
+    def load(self, name="agent.pkl", folder=""):
+        self.actor.load_state_dict(torch.load(folder + name))
+        self.critic.load_state_dict(torch.load(folder + 'critic_' + name))
         self.actor.eval()
         self.critic.eval()
         self.actor.to(self.device)
@@ -291,9 +297,9 @@ def create_trajectory(log_path: str):
 def update_agent_remote(config):
     response = requests.get(config.get_reload_url())
     if response.status_code == 200:
-        print("Reloading agent")
+        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent updated")
     else:
-        print("Error reloading agent")
+        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Error reloading agent")
     return
 
 
@@ -306,13 +312,15 @@ def start(load_model=False, colab=False):
 
     ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
-        ppo.actor.load_state_dict(torch.load(__file__[:-8] + "/best_agent_.pth"))
-        ppo.critic.load_state_dict(torch.load(__file__[:-8] + "/critic_best_agent_.pth"))
+        ppo.load(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
+    else:
+        ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
 
     log_str = []
 
     splt_str = '\n' + '#' * 80 + '\n'
     log_str.append(splt_str)
+    update_agent_remote(config)
     if load_model:
         log_str.append("Pretrained model has been loaded!\n")
     strt_msg = f"Model uses {ppo.device}\n Lambda = {LAMBDA}\nGamma = {GAMMA}\n" \
@@ -330,9 +338,6 @@ def start(load_model=False, colab=False):
     with open(configuration.logPath + "train_log.txt", "a") as myfile:
         myfile.write('\n'.join(log_str))
 
-    episodes_sampled = 0
-    steps_sampled = 0
-    max_reward = 0
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
     print(msg)
@@ -340,23 +345,14 @@ def start(load_model=False, colab=False):
         myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
-        trajectories = []
-        steps_ctn = 0
-
-        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 1, "./log/")
+        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, "./log/")
         trajectories = create_trajectory(configuration.logPath + "trajectory_log.txt")
 
-        # while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
-        #     traj = sample_episode(env, ppo)
-        #     steps_ctn += len(traj)
-        #     trajectories.append(traj)
-        # episodes_sampled += len(trajectories)
-        # steps_sampled += steps_ctn
-
-        ppo.update(trajectories)
+        actor_loss, critic_loss = ppo.update(trajectories)
+        ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
-        sum_reward = sum([x[2] for x in trajectories])
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward}"
+        sum_reward = sum([x[2] for traj in trajectories for x in traj]) / len(trajectories)
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward}, Actror loss: {actor_loss}, Critic loss: {critic_loss}"
         print(msg)
 
         # if (i + 1) % (ITERATIONS // 100) == 0:
