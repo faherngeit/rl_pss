@@ -13,7 +13,9 @@ import requests
 from utils import AgentDescription
 
 CONFIG_PATH = "general_config.json"
-LOG_PATH = "./log/"
+configuration = AgentDescription.from_file(CONFIG_PATH)
+
+CONFIG_PATH = "general_config.json"
 
 LAMBDA = 0.95
 GAMMA = 0.99
@@ -183,11 +185,11 @@ class PPO:
             idx = torch.randint(0, len(transitions), (BATCH_SIZE,)).to(self.device)
             s = state[idx]
             a = action[idx]
-            op = old_prob[idx]      # Probability of the action in state s.t. old policy
-            v = target_value[idx]   # Estimated by lambda-returns
-            adv = advantage[idx]    # Estimated by generalized advantage estimation
+            op = old_prob[idx]  # Probability of the action in state s.t. old policy
+            v = target_value[idx]  # Estimated by lambda-returns
+            adv = advantage[idx]  # Estimated by generalized advantage estimation
 
-            #Update actor here
+            # Update actor here
             log_prob, distribution = self.actor.compute_proba(s, a)
             ratio = torch.exp(log_prob - op)
             surr1 = ratio * adv
@@ -197,7 +199,7 @@ class PPO:
             actor_loss.backward()
             self.actor_optim.step()
 
-            #Update critic here
+            # Update critic here
             critic_value = self.critic.get_value(s)
             critic_loss = nn.MSELoss()(critic_value.squeeze(-1), v)
             self.critic_optim.zero_grad()
@@ -285,6 +287,7 @@ def create_trajectory(log_path: str):
         trajectories.append(compute_lambda_returns_and_gae(traj))
     return trajectories
 
+
 def update_agent_remote(config):
     response = requests.get(config.get_reload_url())
     if response.status_code == 200:
@@ -324,7 +327,7 @@ def start(load_model=False, colab=False):
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
-    with open(LOG_PATH + "train_log.txt", "a") as myfile:
+    with open(configuration.logPath + "train_log.txt", "a") as myfile:
         myfile.write('\n'.join(log_str))
 
     episodes_sampled = 0
@@ -333,15 +336,15 @@ def start(load_model=False, colab=False):
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
     print(msg)
-    with open(LOG_PATH + "train_log.txt", "a") as myfile:
-        myfile.write(msg+'\n')
+    with open(configuration.logPath + "train_log.txt", "a") as myfile:
+        myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
         trajectories = []
         steps_ctn = 0
 
-        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, "./log/")
-        trajectories = create_trajectory("./trajectory_log.txt")
+        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 1, "./log/")
+        trajectories = create_trajectory(configuration.logPath + "trajectory_log.txt")
 
         # while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
         #     traj = sample_episode(env, ppo)
@@ -355,7 +358,6 @@ def start(load_model=False, colab=False):
         sum_reward = sum([x[2] for x in trajectories])
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward}"
         print(msg)
-
 
         # if (i + 1) % (ITERATIONS // 100) == 0:
         #     rewards = evaluate_policy(env, ppo, 20)

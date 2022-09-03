@@ -2,6 +2,7 @@ function agentServerResponse = sendResultWrapper(result)
 % state [4,F,t], F - phasor frequency = 50(60) Гц
 
 config = jsonDataExtract("../general_config.json");
+link = ['http://', config.Python.agentHost,':', num2str(config.Python.agentPort), config.Python.trainPostfix];
 ACTION_SIZE = config.Python.actionSize;
 
 jsonGlobalArray = [];
@@ -23,6 +24,10 @@ end
 
 % jsonText = jsonencode(jsonGlobalArray, PrettyPrint = true)
 jsonText = jsonencode(jsonGlobalArray);
-agentServerResponse = pyrunfile('send_result.py', "response", pyJsonText = jsonText);
 
+request = matlab.net.http.RequestMessage('POST',[], jsonencode(struct('result',jsonText)));
+uri = matlab.net.URI(link);
+agentServerResponse = send(request,uri);
+
+% agentServerResponse = pyrunfile('send_result.py', "response", pyJsonText = jsonText);
 end
