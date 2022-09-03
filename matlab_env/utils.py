@@ -13,6 +13,7 @@ class AgentDescription:
     reloadPostfix: str
     actionScaler: list
     agentPath: str
+    logPath: str
     agentNamePrefix: str
     device: str
     default_path: str = "../general_config.json"

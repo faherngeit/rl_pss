@@ -8,6 +8,7 @@
         "trainPostfix": "/train/",
         "reloadPostfix": "/reload/",
         "agentPath": "/models/",
+        "logPath": "log/",
         "agentNamePrefix": "agent",
         "actionScaler": [25, 1, 1, 5, 5],
         "device": "cpu"

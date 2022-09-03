@@ -8,10 +8,12 @@ import random
 from datetime import datetime
 import matlab.engine
 import json
+import requests
 
 from utils import AgentDescription
 
 CONFIG_PATH = "general_config.json"
+LOG_PATH = "./log/"
 
 LAMBDA = 0.95
 GAMMA = 0.99
@@ -47,28 +49,45 @@ def compute_lambda_returns_and_gae(trajectory):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, action_dim, action_scaler):
         super().__init__()
         # Advice: use same log_sigma for all states to improve stability
         # You can do this by defining log_sigma as nn.Parameter(torch.zeros(...))
-        self.model = nn.Sequential(
-            nn.Linear(state_dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
+        self.short_window = torch.nn.Sequential(
+            torch.nn.Conv1d(4, 8, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 8, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
         )
-        self.mean = nn.Linear(256, action_dim)
+        self.agg_window = torch.nn.Sequential(
+            torch.nn.Conv1d(16, 8, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 4, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(4, 1, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+        )
+        self.long_window = torch.nn.Sequential(
+            torch.nn.Conv1d(4, 8, kernel_size=11, padding=5),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 8, kernel_size=11, padding=5),
+            torch.nn.ReLU(),
+        )
+        self.mean = torch.nn.Sequential(
+            torch.nn.Linear(60, 60),
+            torch.nn.ReLU(),
+            torch.nn.Linear(60, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16, action_dim),
+            torch.nn.ReLU(),
+        )
         # self.sigma = nn.Sequential(
         #     nn.Linear(256, action_dim),
         #     nn.ELU()
         # )
-        # self.action_scaler = action_scaler
+        self.action_scaler = torch.tensor(action_scaler, dtype=torch.float32)
         self.sigma = nn.Parameter(torch.zeros(action_dim))
 
     def compute_proba(self, state, action):
@@ -80,39 +99,65 @@ class Actor(nn.Module):
     def act(self, state):
         # Returns an action (with tanh), not-transformed action (without tanh) and distribution of non-transformed actions
         # Remember: agent is not deterministic, sample actions from distribution (e.g. Gaussian)
-        latent = self.model(state)
+        short_rep = self.short_window(state)
+        long_rep = self.long_window(state)
+        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=0))
         mean = self.mean(latent)
         # sigma = torch.exp(-self.sigma(latent))
         sigma = torch.exp(self.sigma)
         distribution = Normal(mean, sigma)
         action = distribution.sample()
-        # tanh_action = torch.sigmoid(action) * self.action_scaler
-        tanh_action = torch.sigmoid(action)
+        tanh_action = torch.sigmoid(action) * self.action_scaler
+        # tanh_action = torch.sigmoid(action)
         return tanh_action, action, distribution
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim):
+    def __init__(self):
         super().__init__()
-        self.model = nn.Sequential(
-            nn.Linear(state_dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
+        self.short_window = torch.nn.Sequential(
+            torch.nn.Conv1d(4, 8, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 8, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+        )
+        self.agg_window = torch.nn.Sequential(
+            torch.nn.Conv1d(16, 8, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 4, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(4, 1, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+        )
+        self.long_window = torch.nn.Sequential(
+            torch.nn.Conv1d(4, 8, kernel_size=11, padding=5),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(8, 8, kernel_size=11, padding=5),
+            torch.nn.ReLU(),
+        )
+        self.mean = torch.nn.Sequential(
+            torch.nn.Linear(60, 60),
+            torch.nn.ReLU(),
+            torch.nn.Linear(60, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16, 1),
+            torch.nn.ReLU(),
         )
 
     def get_value(self, state):
-        return self.model(state)
+        short_rep = self.short_window(state)
+        long_rep = self.long_window(state)
+        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=0))
+        return self.mean(latent)
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, device='cpu'):
+    def __init__(self, action_scaler, action_dim, device='cpu'):
         self.device = device
-        self.actor = Actor(state_dim, action_dim).to(self.device)
-        self.critic = Critic(state_dim).to(self.device)
+        self.actor = Actor(action_dim, action_scaler).to(self.device)
+        self.critic = Critic().to(self.device)
         self.actor_optim = Adam(self.actor.parameters(), ACTOR_LR, amsgrad=True)
         self.critic_optim = Adam(self.critic.parameters(), CRITIC_LR, amsgrad=True)
 
@@ -235,10 +280,18 @@ def create_trajectory(log_path: str):
     for exp in data:
         traj = []
         for ep in exp['data']:
-            state = [x[-1] for x in ep['state']] # TODO: remove this hack
+            state = [x for x in ep['state']]
             traj.append((state, ep['pureAction'], ep['reward'], ep['probability'][0], ep['probability'][1]))
         trajectories.append(compute_lambda_returns_and_gae(traj))
     return trajectories
+
+def update_agent_remote(config):
+    response = requests.get(config.get_reload_url())
+    if response.status_code == 200:
+        print("Reloading agent")
+    else:
+        print("Error reloading agent")
+    return
 
 
 def start(load_model=False, colab=False):
@@ -248,8 +301,7 @@ def start(load_model=False, colab=False):
     eng = matlab.engine.start_matlab()
     eng.cd("./matlab_env/")
 
-    #TODO : provide proper state dim
-    ppo = PPO(state_dim=config.stateSize[0], action_dim=config.actionSize)
+    ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
         ppo.actor.load_state_dict(torch.load(__file__[:-8] + "/best_agent_.pth"))
         ppo.critic.load_state_dict(torch.load(__file__[:-8] + "/critic_best_agent_.pth"))
@@ -272,7 +324,7 @@ def start(load_model=False, colab=False):
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
-    with open("train_log.txt", "a") as myfile:
+    with open(LOG_PATH + "train_log.txt", "a") as myfile:
         myfile.write('\n'.join(log_str))
 
     episodes_sampled = 0
@@ -281,14 +333,14 @@ def start(load_model=False, colab=False):
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
     print(msg)
-    with open("train_log.txt", "a") as myfile:
+    with open(LOG_PATH + "train_log.txt", "a") as myfile:
         myfile.write(msg+'\n')
 
     for i in range(ITERATIONS):
         trajectories = []
         steps_ctn = 0
 
-        request = eng.simWrapper('scenariosNormState', 'IntMaxDeltaWs', 0, 4)
+        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, "./log/")
         trajectories = create_trajectory("./trajectory_log.txt")
 
         # while len(trajectories) < MIN_EPISODES_PER_UPDATE or steps_ctn < MIN_TRANSITIONS_PER_UPDATE:
@@ -299,17 +351,22 @@ def start(load_model=False, colab=False):
         # steps_sampled += steps_ctn
 
         ppo.update(trajectories)
+        update_agent_remote(config)
+        sum_reward = sum([x[2] for x in trajectories])
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward}"
+        print(msg)
 
-        if (i + 1) % (ITERATIONS // 100) == 0:
-            rewards = evaluate_policy(env, ppo, 20)
-            msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {np.mean(rewards)}, Reward std: {np.std(rewards)}, Episodes: {episodes_sampled}, Steps: {steps_sampled}"
-            print(msg)
-            with open("train_log.txt", "a") as myfile:
-                myfile.write(msg+'\n')
-            ppo.save(config.agentPath + config.agentNamePrefix + "_last.pth")
-            if np.mean(rewards) > max_reward:
-                max_reward = np.mean(rewards)
-                ppo.save(config.agentPath + config.agentNamePrefix + "_best.pth")
+
+        # if (i + 1) % (ITERATIONS // 100) == 0:
+        #     rewards = evaluate_policy(env, ppo, 20)
+        #     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {np.mean(rewards)}, Reward std: {np.std(rewards)}, Episodes: {episodes_sampled}, Steps: {steps_sampled}"
+        #     print(msg)
+        #     with open("train_log.txt", "a") as myfile:
+        #         myfile.write(msg+'\n')
+        #     ppo.save(config.agentPath + config.agentNamePrefix + "_last.pth")
+        #     if np.mean(rewards) > max_reward:
+        #         max_reward = np.mean(rewards)
+        #         ppo.save(config.agentPath + config.agentNamePrefix + "_best.pth")
 
 
 if __name__ == "__main__":
