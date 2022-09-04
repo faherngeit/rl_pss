@@ -76,6 +76,7 @@ for sampnum = size(simoutputs,2):-1:1
     py_results(sampnum).A_state        = simoutputs(sampnum).A_state;
     py_results(sampnum).Reward         = rewards;
     py_results(sampnum).Reward_noAgent = rewards_noagent;
+    py_results(sampnum).A_ID         = simoutputs(sampnum).A_ID(1);
 
 end
 end
