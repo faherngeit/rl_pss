@@ -2,7 +2,10 @@ function scenarios = prepareOutputData(model,scenarios,saveOutPut)
     % Модель нужно сохранить для parsim
     save_system(model);
     % Из набора сценариев выделяется список SimInput
-    scens(1:size(scenarios,2)) = scenarios(1:size(scenarios,2)).SimInput;
+    for scennum = size(scenarios,2):-1:1
+        scens(scennum) = scenarios(scennum).SimInput;
+    end
+    
     
     % Сбор результатов для сценариев.
     results_0 = parsim(scens);
