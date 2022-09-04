@@ -30,6 +30,7 @@ class PredictionEntity(BaseModel):
     action: list
     pure_action: list
     log_prob: list
+    rID: float
 
 class ResultEntity(BaseModel):
     result: str
@@ -66,7 +67,8 @@ async def predict(request: StateEntity):
         f.write(log_msg + "\n")
     return PredictionEntity(action=torch.squeeze(action).tolist(),
                             pure_action=torch.squeeze(pure_action).tolist(),
-                            log_prob=log_prob_ls)
+                            log_prob=log_prob_ls,
+                            rID=1.)
 
 
 @app.post(configuration.trainPostfix)

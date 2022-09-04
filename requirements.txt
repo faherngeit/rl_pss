@@ -1,0 +1,8 @@
+numpy
+torch
+setuptools
+requests
+uvicorn
+fastapi
+pydantic
+pandas

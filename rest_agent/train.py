@@ -9,6 +9,7 @@ from datetime import datetime
 import matlab.engine
 import json
 import requests
+import argparse
 
 from utils import AgentDescription
 
@@ -33,6 +34,39 @@ MIN_EPISODES_PER_UPDATE = 16
 
 ITERATIONS = 10
 
+def get_arguments():
+    """
+    Get arguments from command line
+    Returns
+    -------
+    Dictionary with arguments
+    """
+    parser = argparse.ArgumentParser("Train RL PSS agent")
+    parser.add_argument(
+        "--telegram",
+        dest="telegram",
+        default=None,
+        type=str,
+        help="should logs be sent to telegram",
+    )
+    parser.add_argument(
+        "--load",
+        dest="load_model",
+        default=False,
+        action="store_true",
+        help="Allows to load pretrained model from a file",
+    )
+    args = parser.parse_args()
+    return args
+
+def log_both_telegram(message, config):
+    if config is None:
+        return
+    url = f"https://api.telegram.org/bot{config['token']}/sendMessage?chat_id={config['chat_id']}&text={message}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Error sending telegram message")
+    return
 
 def compute_lambda_returns_and_gae(trajectory):
     lambda_returns = []
@@ -205,7 +239,7 @@ class PPO:
 
             # Update critic here
             critic_value = self.critic.get_value(s)
-            critic_loss = nn.MSELoss()(critic_value.squeeze(-1), v)
+            critic_loss = nn.MSELoss()(torch.squeeze(critic_value), v)
             critic_loss_ls.append(critic_loss.item())
             self.critic_optim.zero_grad()
             critic_loss.backward()
@@ -303,7 +337,7 @@ def update_agent_remote(config):
     return
 
 
-def start(load_model=False, colab=False):
+def start(load_model=False, telegram=None):
     torch.manual_seed(12345)
     np.random.seed(3141592)
     config = AgentDescription.from_file(CONFIG_PATH)
@@ -340,7 +374,9 @@ def start(load_model=False, colab=False):
 
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
+    log_both_telegram(msg, telegram)
     print(msg)
+
     with open(configuration.logPath + "train_log.txt", "a") as myfile:
         myfile.write(msg + '\n')
 
@@ -352,9 +388,11 @@ def start(load_model=False, colab=False):
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
         sum_reward = sum([x[2] for traj in trajectories for x in traj]) / len(trajectories)
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward}, Actror loss: {actor_loss}, Critic loss: {critic_loss}"
-        print(msg)
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
 
+        if ((i + 1) % (ITERATIONS // 10) == 0):
+            log_both_telegram(msg, telegram)
+        print(msg)
         # if (i + 1) % (ITERATIONS // 100) == 0:
         #     rewards = evaluate_policy(env, ppo, 20)
         #     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {np.mean(rewards)}, Reward std: {np.std(rewards)}, Episodes: {episodes_sampled}, Steps: {steps_sampled}"
@@ -368,4 +406,12 @@ def start(load_model=False, colab=False):
 
 
 if __name__ == "__main__":
-    start()
+    args = get_arguments()
+    telegram = None
+    if args.telegram:
+        with open(args.telegram, 'r') as f:
+            telegram = json.load(f)
+    start(args, telegram)
+
+#%%
+
