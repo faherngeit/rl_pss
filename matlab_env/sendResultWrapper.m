@@ -19,6 +19,7 @@ for i = 1 : size(result, 2)
 
         jsonInternalEpisodeArray = [jsonInternalEpisodeArray jsonObject];
     end
+    episode.ID = result(i).A_ID;
     episode.data = jsonInternalEpisodeArray;
     jsonGlobalArray = [jsonGlobalArray episode];
 end
