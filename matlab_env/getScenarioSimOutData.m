@@ -1,6 +1,7 @@
-function [result, simLog, simInputs] = getScenarioSimOutData(scenarios_file, scen_quan, reward_type, penalty, results_directory)
+function [result, simLog] = getScenarioSimOutData(scenarios_file, scen_quan, reward_type, penalty, results_directory)
 % Функция выполняет загрузку пула сценариев, выбор случайного,
 % моделирование процесса, расчета награды и возвращает 3-хмерный массив для
+% 
 % обучения с добавлением рассчитанной награды.
 %   scenarios_file   - пусть к файлу пула сценариев, хранящему
 %                      сгенерированные заранее объекты SimulationInput

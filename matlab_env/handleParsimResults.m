@@ -1,7 +1,7 @@
 function py_results = handleParsimResults(simoutputs, reward_type, penalty, scenarios)
 
 % Для каждого эксперимента
-for sampnum = 1:size(simoutputs,2)  
+for sampnum = size(simoutputs,2):-1:1  
     % Расчет полной траектории награды
     raw_reward  = get_reward(simoutputs(sampnum), true, reward_type); 
     % Получение награды без агента
