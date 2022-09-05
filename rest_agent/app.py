@@ -25,6 +25,7 @@ agent = PPO(action_dim=configuration.actionSize, action_scaler=configuration.act
 
 class StateEntity(BaseModel):
     state: list
+    ID: float
 
 
 class PredictionEntity(BaseModel):
