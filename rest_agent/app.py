@@ -4,6 +4,7 @@ import uvicorn
 import json
 import torch
 import os
+from os import path
 from pydantic import BaseModel
 import json
 from datetime import datetime
@@ -63,7 +64,7 @@ async def predict(request: StateEntity):
                           "action": torch.squeeze(action).tolist(),
                           "pure_action": torch.squeeze(pure_action).tolist(),
                           "log_prob": log_prob_ls}, indent=4)
-    with open(configuration.logPath + "state_log.txt", 'a') as f:
+    with open(path.join(configuration.logPath,"state_log.txt"), 'a') as f:
         f.write(log_msg + "\n")
     return PredictionEntity(action=torch.squeeze(action).tolist(),
                             pure_action=torch.squeeze(pure_action).tolist(),
@@ -75,9 +76,9 @@ async def predict(request: StateEntity):
 async def train(request: ResultEntity):
     result = request.result
     result = json.loads(result)
-    with open(configuration.logPath + "new_log.txt", 'w') as f:
+    with open(path.join(configuration.logPath,"new_log.txt"), 'w') as f:
         f.write(json.dumps({"time": datetime.now().isoformat(), "result": result}, indent=4))
-    with open(configuration.logPath + "trajectory_log.txt", 'w') as f:
+    with open(path.join(configuration.logPath, "trajectory_log.txt"), 'w') as f:
         json.dump(result, f, indent=4)
     return("OK")
 
