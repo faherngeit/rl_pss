@@ -17,7 +17,7 @@ class AgentDescription:
     logPath: str
     agentNamePrefix: str
     device: str
-    default_path: str = path.join("..", "general_config.json")
+    default_path: str = path.normpath(path.join("..", "general_config.json"))
 
     @staticmethod
     def from_file(path: str):

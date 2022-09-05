@@ -265,12 +265,12 @@ class PPO:
         return action, pure_action, log_prob
 
     def save(self, name="agent.pkl", folder=""):
-        torch.save(self.actor.state_dict(), path.join(folder, name))
-        torch.save(self.critic.state_dict(), path.join(folder, 'critic_' + name))
+        torch.save(self.actor.state_dict(), path.normpath(path.join(folder, name)))
+        torch.save(self.critic.state_dict(), path.normpath(path.join(folder, 'critic_' + name)))
 
     def load(self, name="agent.pkl", folder=""):
-        self.actor.load_state_dict(torch.load(path.join(folder, name)))
-        self.critic.load_state_dict(torch.load(path.join(folder, 'critic_' + name)))
+        self.actor.load_state_dict(torch.load(path.normpath(path.join(folder, name))))
+        self.critic.load_state_dict(torch.load(path.normpath(path.join(folder, 'critic_' + name))))
         self.actor.eval()
         self.critic.eval()
         self.actor.to(self.device)
@@ -375,7 +375,7 @@ def start(load_model=False, telegram=None):
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
-    with open(path.join(configuration.logPath, "train_log.txt"), "a") as myfile:
+    with open(path.normpath(path.join(configuration.logPath, "train_log.txt")), "a") as myfile:
         myfile.write('\n'.join(log_str))
 
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
@@ -383,12 +383,12 @@ def start(load_model=False, telegram=None):
     log_both_telegram(msg, telegram)
     print(msg)
 
-    with open(path.join(configuration.logPath, "train_log.txt"), "a") as myfile:
+    with open(path.normpath(path.join(configuration.logPath, "train_log.txt")), "a") as myfile:
         myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
         request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, "./log/")
-        trajectories = create_trajectory(path.join(configuration.logPath, "trajectory_log.txt"))
+        trajectories = create_trajectory(path.normpath(path.join(configuration.logPath, "trajectory_log.txt")))
 
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
