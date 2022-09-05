@@ -348,9 +348,14 @@ def start(load_model=False, telegram=None):
     ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
         ppo.load(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent was loaded from {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
+        log_both_telegram(msg, telegram)
+        print(msg)
     else:
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
-
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] New agent was saved in {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
+        log_both_telegram(msg, telegram)
+        print(msg)
     log_str = []
 
     splt_str = '\n' + '#' * 80 + '\n'
@@ -383,7 +388,7 @@ def start(load_model=False, telegram=None):
 
     for i in range(ITERATIONS):
         request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, "./log/")
-        trajectories = create_trajectory(configuration.logPath + "trajectory_log.txt")
+        trajectories = create_trajectory(path.join(configuration.logPath, "trajectory_log.txt"))
 
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
@@ -412,7 +417,7 @@ if __name__ == "__main__":
     if args.telegram:
         with open(args.telegram, 'r') as f:
             telegram = json.load(f)
-    start(args, telegram)
+    start(load_model=args.load_model, telegram=telegram)
 
 #%%
 
