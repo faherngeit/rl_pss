@@ -31,7 +31,7 @@ BATCHES_PER_UPDATE = 16
 BATCH_SIZE = 32
 
 EPISODES_PER_UPDATE = 16
-ITERATIONS = 10
+ITERATIONS = 200
 
 def get_arguments():
     """
@@ -343,6 +343,7 @@ def start(load_model=False, telegram=None):
     eng = matlab.engine.start_matlab()
     eng.cd("./matlab_env/")
 
+    log_both_telegram("Start new education with logging to Telegram!", telegram)
     ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
         ppo.load(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
@@ -372,6 +373,8 @@ def start(load_model=False, telegram=None):
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
+    log_both_telegram(strt_msg, telegram)
+
     with open(path.join(configuration.logPath, "train_log.txt"), "a") as myfile:
         myfile.write('\n'.join(log_str))
 
@@ -393,8 +396,7 @@ def start(load_model=False, telegram=None):
         sum_reward = sum([x[2] for traj in trajectories for x in traj]) / len(trajectories)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
 
-        if ((i + 1) % (ITERATIONS // 10) == 0):
-            log_both_telegram(msg, telegram)
+        log_both_telegram(msg, telegram)
         print(msg)
         # if (i + 1) % (ITERATIONS // 100) == 0:
         #     rewards = evaluate_policy(env, ppo, 20)
