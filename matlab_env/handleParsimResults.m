@@ -2,9 +2,8 @@ function py_results = handleParsimResults(simoutputs, reward_type, penalty, scen
 
 % Для каждого эксперимента
 for sampnum = size(simoutputs,2):-1:1  
-    % Беспокоит сценарий, в котором ошибка возникла вообще при отсутствии
-    % действий агента
-    if (size(simoutputs(sampnum).A_state,3) >= 1) 
+    % Беспокоит сценарий, в котором ошибка возникла практически сразу
+    if (size(simoutputs(sampnum).t,1) >= 2) 
 
         % Определение пользовательского времени окончания расчета
         simStopTime = simoutputs(sampnum).SimulationMetadata.ModelInfo.StopTime;
@@ -85,7 +84,7 @@ for sampnum = size(simoutputs,2):-1:1
         py_results(sampnum).A_ID           = simoutputs(sampnum).A_ID(1);
     
     % Не знаю уж пригодится это или нет, но на всякий случай пусть будет
-    % защита от случаев, когда все упало вообще без действий агента.
+    % защита от случаев, когда все упало вообще сразу
     else
         %
         helper(1) = penalty;
