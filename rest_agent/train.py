@@ -393,7 +393,7 @@ def start(load_model=False, telegram=None):
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
-        sum_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
+        sum_reward = sum([x['reward'] for y in data for x in y['data']]) / len(data)
         reference_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, No agent reward: {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
 
