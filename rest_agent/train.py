@@ -28,11 +28,9 @@ CRITIC_LR = 4e-4
 CLIP = 0.2
 ENTROPY_COEF = 2e-2
 BATCHES_PER_UPDATE = 16
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 
-MIN_TRANSITIONS_PER_UPDATE = 2048
-MIN_EPISODES_PER_UPDATE = 16
-
+EPISODES_PER_UPDATE = 16
 ITERATIONS = 10
 
 def get_arguments():
@@ -387,7 +385,7 @@ def start(load_model=False, telegram=None):
         myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, path.normpath("./log/"))
+        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, path.normpath("./log/"))
         trajectories = create_trajectory(path.join(configuration.logPath, "trajectory_log.txt"))
 
         actor_loss, critic_loss = ppo.update(trajectories)
