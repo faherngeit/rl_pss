@@ -27,7 +27,7 @@ end
 % jsonText = jsonencode(jsonGlobalArray, PrettyPrint = true)
 jsonText = jsonencode(jsonGlobalArray);
 
-request = matlab.net.http.RequestMessage('POST',[], jsonencode(struct('result',jsonText)));
+request = matlab.net.http.RequestMessage('POST',[], matlab.net.http.io.JSONProvider(struct('result',jsonText)));
 uri = matlab.net.URI(link);
 agentServerResponse = send(request,uri);
 

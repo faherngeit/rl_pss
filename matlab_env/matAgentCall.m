@@ -10,7 +10,7 @@ function [action, pureAction, probability, receivedID] = matAgentCall(state, ID)
 config = jsonDataExtract("../general_config.json");
 link = ['http://', config.Python.agentHost,':', num2str(config.Python.agentPort), config.Python.predictPostfix];
 
-request = matlab.net.http.RequestMessage('POST',[], jsonencode(struct('state',state, 'ID', ID)));
+request = matlab.net.http.RequestMessage('POST',[], matlab.net.http.io.JSONProvider(struct('state',state, 'ID', ID)));
 uri = matlab.net.URI(link);
 r = send(request,uri);
 
