@@ -388,7 +388,7 @@ def start(load_model=False, telegram=None):
 
     for i in range(ITERATIONS):
         request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, 4, path.normpath("./log/"))
-        trajectories = create_trajectory(path.join(configuration.logPath, "/trajectory_log.txt"))
+        trajectories = create_trajectory(path.join(configuration.logPath, "trajectory_log.txt"))
 
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
