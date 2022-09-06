@@ -30,7 +30,7 @@ ENTROPY_COEF = 2e-2
 BATCHES_PER_UPDATE = 16
 BATCH_SIZE = 32
 
-EPISODES_PER_UPDATE = 16
+EPISODES_PER_UPDATE = 20
 ITERATIONS = 200
 
 def get_arguments():
@@ -314,9 +314,7 @@ def sample_episode(env, agent):
     return compute_lambda_returns_and_gae(trajectory)
 
 
-def create_trajectory(log_path: str):
-    with open(log_path, 'r') as f:
-        data = json.load(f)
+def create_trajectory(data: list):
     trajectories = []
     for exp in data:
         traj = []
@@ -387,27 +385,20 @@ def start(load_model=False, telegram=None):
         myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_NormalStates', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, path.normpath("./log/"))
-        trajectories = create_trajectory(path.join(configuration.logPath, "trajectory_log.txt"))
+        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, path.normpath("./log/"))
+        with open(path.join(configuration.logPath, "trajectory_log.txt"), 'r') as f:
+            data = json.load(f)
+        trajectories = create_trajectory(data)
 
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
-        sum_reward = sum([x[2] for traj in trajectories for x in traj]) / len(trajectories)
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
+        sum_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
+        reference_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, No agent reward: {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
 
         log_both_telegram(msg, telegram)
         print(msg)
-        # if (i + 1) % (ITERATIONS // 100) == 0:
-        #     rewards = evaluate_policy(env, ppo, 20)
-        #     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {np.mean(rewards)}, Reward std: {np.std(rewards)}, Episodes: {episodes_sampled}, Steps: {steps_sampled}"
-        #     print(msg)
-        #     with open("train_log.txt", "a") as myfile:
-        #         myfile.write(msg+'\n')
-        #     ppo.save(config.agentPath + config.agentNamePrefix + "_last.pth")
-        #     if np.mean(rewards) > max_reward:
-        #         max_reward = np.mean(rewards)
-        #         ppo.save(config.agentPath + config.agentNamePrefix + "_best.pth")
 
 
 if __name__ == "__main__":
