@@ -368,8 +368,7 @@ def start(load_model=False, telegram=None):
                f"Entropy_coef = {ENTROPY_COEF}\n" \
                f"Batches per update = {BATCHES_PER_UPDATE}\n" \
                f"Batch size = {BATCH_SIZE}\n" \
-               f"Min transition per update = {MIN_TRANSITIONS_PER_UPDATE}\n" \
-               f"Min episode per update = {MIN_EPISODES_PER_UPDATE}\n" \
+               f"Episode per update = {EPISODES_PER_UPDATE}\n" \
                f"Irerations = {ITERATIONS}\n" \
                "\n"
     log_str.append(strt_msg)
