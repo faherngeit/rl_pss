@@ -14,7 +14,7 @@ for sampnum = size(simoutputs,2):-1:1
     rewards_noagent = zeros(1,size(simoutputs(sampnum).A_state,3));
 
     % Если расчет прервался из-за нарушения устойчивости
-    if simoutputs(sampnum).t(size(simoutputs(sampnum).t,1)) < simStopTime       
+    if (simoutputs(sampnum).ErrorMessage ~= "") || (simoutputs(sampnum).t(size(simoutputs(sampnum).t,1)) < simStopTime)       
         
         % Хочется награду распределить пропорционально квадрату номера
         % действия. Сложно скзаать, как это скажется, но представляется,
@@ -76,7 +76,7 @@ for sampnum = size(simoutputs,2):-1:1
     py_results(sampnum).A_state        = simoutputs(sampnum).A_state;
     py_results(sampnum).Reward         = rewards;
     py_results(sampnum).Reward_noAgent = rewards_noagent;
-    py_results(sampnum).A_ID         = simoutputs(sampnum).A_ID(1);
+    py_results(sampnum).A_ID           = simoutputs(sampnum).A_ID(1);
 
 end
 end
