@@ -51,8 +51,8 @@ def get_arguments():
     parser.add_argument(
         "--load",
         dest="load_model",
-        default=False,
-        action="store_true",
+        default=None,
+        type=str,
         help="Allows to load pretrained model from a file",
     )
     args = parser.parse_args()
@@ -334,7 +334,7 @@ def update_agent_remote(config):
     return
 
 
-def start(load_model=False, telegram=None):
+def start(load_model=None, telegram=None):
     torch.manual_seed(12345)
     np.random.seed(3141592)
     config = AgentDescription.from_file(CONFIG_PATH)
@@ -344,8 +344,8 @@ def start(load_model=False, telegram=None):
     log_both_telegram("Start new education with logging to Telegram!", telegram)
     ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
-        ppo.load(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent was loaded from {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
+        ppo.load(name=load_model, folder=config.agentPath)
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent was loaded from {path.join(config.agentPath, load_model)}"
         log_both_telegram(msg, telegram)
         print(msg)
     else:
