@@ -411,6 +411,10 @@ if __name__ == "__main__":
     if args.telegram:
         with open(args.telegram, 'r') as f:
             telegram = json.load(f)
-    start(load_model=args.load_model, telegram=telegram)
+    try:
+        start(load_model=args.load_model, telegram=telegram)
+    except Exception as e:
+        log_both_telegram(f"Error: {e}", telegram)
+        raise e
 
 # %%
