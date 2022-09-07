@@ -35,6 +35,9 @@ class AgentDescription:
     def get_train_url(self):
         return "http://" + self.agentHost + ":" + str(self.agentPort) + self.trainPostfix
 
-    def get_reload_url(self):
-        return "http://" + self.agentHost + ":" + str(self.agentPort) + self.reloadPostfix
+    def get_reload_url(self, path: str = ""):
+        if path == "":
+            return "http://" + self.agentHost + ":" + str(self.agentPort) + self.reloadPostfix
+        else:
+            return "http://" + self.agentHost + ":" + str(self.agentPort) + self.reloadPostfix + "?path=" + path
 #%%
