@@ -30,8 +30,9 @@ ENTROPY_COEF = 2e-2
 BATCHES_PER_UPDATE = 64
 BATCH_SIZE = 64
 
-EPISODES_PER_UPDATE = 20
+EPISODES_PER_UPDATE = 1
 ITERATIONS = 200
+
 
 def get_arguments():
     """
@@ -58,6 +59,7 @@ def get_arguments():
     args = parser.parse_args()
     return args
 
+
 def log_both_telegram(message, config):
     if config is None:
         return
@@ -66,6 +68,7 @@ def log_both_telegram(message, config):
     if response.status_code != 200:
         print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Error sending telegram message")
     return
+
 
 def compute_lambda_returns_and_gae(trajectory):
     lambda_returns = []
@@ -247,7 +250,6 @@ class PPO:
         # self.actor_scheduler.step()
         return np.mean(actor_loss_ls), np.mean(critic_loss_ls)
 
-
     def get_value(self, state):
         with torch.no_grad():
             state.to(self.device)
@@ -325,8 +327,8 @@ def create_trajectory(data: list):
     return trajectories
 
 
-def update_agent_remote(config):
-    response = requests.get(config.get_reload_url())
+def update_agent_remote(config, path=""):
+    response = requests.get(config.get_reload_url(path))
     if response.status_code == 200:
         print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent updated")
     else:
@@ -345,11 +347,13 @@ def start(load_model=None, telegram=None):
     ppo = PPO(action_dim=config.actionSize, action_scaler=config.actionScaler)
     if load_model:
         ppo.load(name=load_model, folder=config.agentPath)
+        update_agent_remote(config, load_model)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent was loaded from {path.join(config.agentPath, load_model)}"
         log_both_telegram(msg, telegram)
         print(msg)
     else:
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
+        update_agent_remote(config)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] New agent was saved in {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
         log_both_telegram(msg, telegram)
         print(msg)
@@ -357,7 +361,6 @@ def start(load_model=None, telegram=None):
 
     splt_str = '\n' + '#' * 80 + '\n'
     log_str.append(splt_str)
-    update_agent_remote(config)
     if load_model:
         log_str.append("Pretrained model has been loaded!\n")
     strt_msg = f"Model uses {ppo.device}\n Lambda = {LAMBDA}\nGamma = {GAMMA}\n" \
@@ -385,9 +388,9 @@ def start(load_model=None, telegram=None):
         myfile.write(msg + '\n')
 
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, path.normpath("./log/"))
-        with open(path.join(configuration.logPath, "trajectory_log.txt"), 'r') as f:
-            data = json.load(f)
+        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, 'log', 'error')
+        with open(path.join(configuration.logPath, "trajectory_log.txt"), 'r') as file:
+            data = json.load(file)
         trajectories = create_trajectory(data)
 
         actor_loss, critic_loss = ppo.update(trajectories)
@@ -395,7 +398,8 @@ def start(load_model=None, telegram=None):
         update_agent_remote(config)
         sum_reward = sum([x['reward'] for y in data for x in y['data']]) / len(data)
         reference_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, No agent reward: {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f}"
+        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, No agent reward: \
+        {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f} "
 
         log_both_telegram(msg, telegram)
         print(msg)
@@ -409,5 +413,4 @@ if __name__ == "__main__":
             telegram = json.load(f)
     start(load_model=args.load_model, telegram=telegram)
 
-#%%
-
+# %%

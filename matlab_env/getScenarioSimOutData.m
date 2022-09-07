@@ -43,9 +43,9 @@ while(flag)
             % Сохраняем файл разультатов моделирования в отдельную папку
             simOut.Out  = simoutputs(scennum);
             simOut.Scen = scenarios(scennum);
-            save([errors_directory, filesep, "errorOutput ", ...
-                 replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-'),  "_", ...
-                 num2str(scennum), ".mat"], "simOut");
+            name = "errorOutput " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') +  "_" +num2str(scennum) + ".mat";
+            save_path = [convertStringsToChars(errors_directory), filesep, convertStringsToChars(name)];
+            save(save_path, "simOut");
             er_indexes = [er_indexes; scennum];
         end
     end

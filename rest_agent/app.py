@@ -10,7 +10,6 @@ import json
 from datetime import datetime
 import time
 
-
 from train import PPO
 from utils import AgentDescription
 
@@ -34,8 +33,10 @@ class PredictionEntity(BaseModel):
     log_prob: list
     rID: float
 
+
 class ResultEntity(BaseModel):
     result: str
+
 
 @app.on_event(event_type="startup")
 def load_services():
@@ -43,9 +44,10 @@ def load_services():
     agent.perform()
     print(f"USER:     New Agent was initialized! To load last update please visit {configuration.reloadPostfix}")
 
+
 @app.get("/")
 def root():
-    return("Hello! This is main page of RL PSS agent! \n For prediction, please, visit /predict")
+    return "Hello! This is main page of RL PSS agent! \n For prediction, please, visit /predict"
 
 
 @app.post(configuration.predictPostfix)
@@ -65,7 +67,7 @@ async def predict(request: StateEntity):
                           "action": torch.squeeze(action).tolist(),
                           "pure_action": torch.squeeze(pure_action).tolist(),
                           "log_prob": log_prob_ls}, indent=4)
-    with open(path.join(configuration.logPath,"state_log.txt"), 'a') as f:
+    with open(path.join(configuration.logPath, "state_log.txt"), 'a') as f:
         f.write(log_msg + "\n")
     return PredictionEntity(action=torch.squeeze(action).tolist(),
                             pure_action=torch.squeeze(pure_action).tolist(),
@@ -77,20 +79,26 @@ async def predict(request: StateEntity):
 async def train(request: ResultEntity):
     result = request.result
     result = json.loads(result)
-    with open(path.join(configuration.logPath,"new_log.txt"), 'w') as f:
+    with open(path.join(configuration.logPath, "new_log.txt"), 'w') as f:
         f.write(json.dumps({"time": datetime.now().isoformat(), "result": result}, indent=4))
     with open(path.normpath(path.join(configuration.logPath, "trajectory_log.txt")), 'w') as f:
         json.dump(result, f, indent=4)
-    return("OK")
+    return "OK"
 
 
 @app.get(configuration.reloadPostfix)
-async def reload():
-    agent.load(name=configuration.agentNamePrefix + '_last.pth', folder=configuration.agentPath)
-    path = configuration.agentPath + configuration.agentNamePrefix + '_last.pth'
-    print(f"USER:     New agent version was successfully reloaded from: {path}")
-    return("Reloaded")
+async def reload(path: str = ""):
+    if path == "":
+        agent.load(name=configuration.agentNamePrefix + '_last.pth', folder=configuration.agentPath)
+        full_path = configuration.agentPath + os.path.sep + configuration.agentNamePrefix + '_last.pth'
+        print(f"USER:     New agent version was successfully reloaded from: {full_path}")
+    else:
+        agent.load(name=path, folder=configuration.agentPath)
+        full_path = configuration.agentPath + os.path.sep + path
+        print(f"USER:     New agent version was successfully reloaded from: {full_path}")
+    return "Reloaded"
+
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host=configuration.agentHost, port=os.getenv("PORT", configuration.agentPort))
-#%%
+# %%
