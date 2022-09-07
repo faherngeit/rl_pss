@@ -11,7 +11,7 @@ simLog.result_agent = results;
 
 if(results_directory ~= "")
     % Сохранение файла результатов с меткой времени
-    save(results_directory + "simLog " + replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-') + postfix + ".mat","simLog");
+    save([results_directory, filesep, "simLog ", replace(datestr(datetime(now,'ConvertFrom','datenum')),':','-'), postfix, ".mat"], "simLog");
 end
 
 end
