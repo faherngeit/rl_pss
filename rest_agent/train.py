@@ -17,20 +17,18 @@ from utils import AgentDescription
 CONFIG_PATH = "general_config.json"
 configuration = AgentDescription.from_file(CONFIG_PATH)
 
-CONFIG_PATH = "general_config.json"
-
 LAMBDA = 0.95
 GAMMA = 0.99
 
-ACTOR_LR = 8e-4
+ACTOR_LR = 4e-4
 CRITIC_LR = 4e-4
 
 CLIP = 0.2
 ENTROPY_COEF = 2e-2
-BATCHES_PER_UPDATE = 64
-BATCH_SIZE = 64
+BATCHES_PER_UPDATE = 512
+BATCH_SIZE = 128
 
-EPISODES_PER_UPDATE = 20
+EPISODES_PER_UPDATE = 30
 ITERATIONS = 200
 
 
@@ -86,39 +84,67 @@ def compute_lambda_returns_and_gae(trajectory):
     return [(s, a, p, v, adv) for (s, a, _, p, _), v, adv in zip(trajectory, reversed(lambda_returns), reversed(gae))]
 
 
+class OSBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernels=[1, 3, 5, 7, 11]):
+        super().__init__()
+        assert out_channels % 2 == 0, "Numnber of out channels should be odd!"
+        self.kernels = kernels
+        self.convs1 = nn.ModuleList([nn.Conv1d(in_channels=in_channels,
+                                               out_channels=4, kernel_size=kernel,
+                                               padding=kernel // 2)
+                                     for kernel in kernels])
+        self.convs2 = nn.ModuleList([nn.Conv1d(in_channels=4 * len(kernels),
+                                               out_channels=4,
+                                               kernel_size=kernel,
+                                               padding=kernel // 2)
+                                     for kernel in kernels])
+        self.batchnorm1 = nn.Sequential(nn.BatchNorm1d(4 * len(kernels)), nn.ReLU())
+        self.batchnorm2 = nn.Sequential(nn.BatchNorm1d(4 * len(kernels)), nn.ReLU())
+        self.convs3 = nn.ModuleList([nn.Conv1d(in_channels=4 * len(kernels),
+                                               out_channels=out_channels // 2,
+                                               kernel_size=kernel,
+                                               padding=kernel // 2)
+                                     for kernel in [1, 3]])
+        self.batchnorm3 = nn.Sequential(nn.BatchNorm1d(out_channels), nn.ReLU())
+
+    def forward(self, state):
+        intermediate = torch.concat([l(state) for l in self.convs1], dim=-2)
+        intermediate = self.batchnorm1(intermediate)
+        intermediate = torch.concat([l(intermediate) for l in self.convs2], dim=-2)
+        intermediate = self.batchnorm2(intermediate)
+        intermediate = torch.concat([l(intermediate) for l in self.convs3], dim=-2)
+        intermediate = self.batchnorm3(intermediate)
+        return intermediate
+
+
+class Encoder(nn.Module):
+    def __init__(self, in_channels, hidden_size, out_channels):
+        super().__init__()
+        self.enc1 = OSBlock(in_channels, in_channels)
+        self.enc2 = OSBlock(in_channels, in_channels)
+        self.hidden_size = hidden_size
+        self.linear = nn.Sequential(
+            nn.Linear(hidden_size * in_channels, out_channels),
+            nn.ReLU()
+        )
+
+    def forward(self, state):
+        x = self.enc1(state)
+        x = self.enc2(x + state)
+        x = self.linear(x.view(x.shape[0], -1))
+        return x
+
+
 class Actor(nn.Module):
     def __init__(self, action_dim, action_scaler):
         super().__init__()
         # Advice: use same log_sigma for all states to improve stability
         # You can do this by defining log_sigma as nn.Parameter(torch.zeros(...))
-        self.short_window = torch.nn.Sequential(
-            torch.nn.Conv1d(4, 8, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 8, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-        )
-        self.agg_window = torch.nn.Sequential(
-            torch.nn.Conv1d(16, 8, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 4, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(4, 1, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-        )
-        self.long_window = torch.nn.Sequential(
-            torch.nn.Conv1d(4, 8, kernel_size=11, padding=5),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 8, kernel_size=11, padding=5),
-            torch.nn.ReLU(),
-        )
+        self.encoder = Encoder(4, 60, 128)
         self.mean = torch.nn.Sequential(
-            torch.nn.Linear(60, 60),
+            torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(60, 32),
-            torch.nn.ReLU(),
-            torch.nn.Linear(32, 16),
-            torch.nn.ReLU(),
-            torch.nn.Linear(16, action_dim),
+            torch.nn.Linear(64, action_dim),
             torch.nn.ReLU(),
         )
         # self.sigma = nn.Sequential(
@@ -137,9 +163,7 @@ class Actor(nn.Module):
     def act(self, state):
         # Returns an action (with tanh), not-transformed action (without tanh) and distribution of non-transformed actions
         # Remember: agent is not deterministic, sample actions from distribution (e.g. Gaussian)
-        short_rep = self.short_window(state)
-        long_rep = self.long_window(state)
-        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=1))
+        latent = self.encoder(state)
         mean = self.mean(latent)
         # sigma = torch.exp(-self.sigma(latent))
         sigma = torch.exp(self.sigma)
@@ -153,41 +177,16 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self):
         super().__init__()
-        self.short_window = torch.nn.Sequential(
-            torch.nn.Conv1d(4, 8, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 8, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-        )
-        self.agg_window = torch.nn.Sequential(
-            torch.nn.Conv1d(16, 8, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 4, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(4, 1, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-        )
-        self.long_window = torch.nn.Sequential(
-            torch.nn.Conv1d(4, 8, kernel_size=11, padding=5),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(8, 8, kernel_size=11, padding=5),
-            torch.nn.ReLU(),
-        )
+        self.encoder = Encoder(4, 60, 128)
         self.mean = torch.nn.Sequential(
-            torch.nn.Linear(60, 60),
+            torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(60, 32),
-            torch.nn.ReLU(),
-            torch.nn.Linear(32, 16),
-            torch.nn.ReLU(),
-            torch.nn.Linear(16, 1),
+            torch.nn.Linear(64, 1),
             torch.nn.ReLU(),
         )
 
     def get_value(self, state):
-        short_rep = self.short_window(state)
-        long_rep = self.long_window(state)
-        latent = self.agg_window(torch.cat([short_rep, long_rep], dim=1))
+        latent = self.encoder(state)
         return self.mean(latent)
 
 
