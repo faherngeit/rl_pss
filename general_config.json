@@ -10,7 +10,7 @@
         "agentPath": "models",
         "logPath": "log",
         "agentNamePrefix": "agent",
-        "actionScaler": [25, 1, 1, 5, 5],
+        "actionScaler": [100, 1, 1, 10, 10],
         "device": "cpu"
     },
     "Matlab": {
@@ -18,13 +18,13 @@
             "CustomPSS1": {
                 "LowerLimit": -1,
                 "UpperLimit": 1,
-                "Ts": 0.01,
-                "Tw": 0.01
+                "Ts": 0.015,
+                "Tw": 1
             },
             "AgentModel": {
                 "agentTs_num": 6,
                 "agentTs_den": 60,
-                "threshold": 1.1,
+                "threshold": "1+1/6",
                 "initPSSParams": [1, 1, 1, 1, 1]
             },
             "LineParameters": {
