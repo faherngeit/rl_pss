@@ -22,7 +22,7 @@
                 "Tw": 0.01
             },
             "AgentModel": {
-                "agentTs_num": 1,
+                "agentTs_num": 6,
                 "agentTs_den": 60,
                 "threshold": 1.1,
                 "initPSSParams": [1, 1, 1, 1, 1]
@@ -42,19 +42,19 @@
                     "qc_l1": 0.50e+08
                 },
                 "GensParameters": {
-                    "p_g1": 0.675e+09,
-                    "p_g2": 0.675e+09
+                    "p_g1": 0.750e+09,
+                    "p_g2": 0.725e+09
                 }
             },
             "Area_2": {
                 "LoadParameters": {
-                    "p__l1": 1.50e+09,
+                    "p__l1": 1.525e+09,
                     "qi_l1": 1.00e+08,
                     "qc_l1": 0.50e+08
                 },
                 "GensParameters": {
-                    "p_g1": 0.675e+09,
-                    "p_g2": 0.675e+09
+                    "p_g1": 0.575e+09,
+                    "p_g2": 0.575e+09
                 }
             }
 
@@ -81,7 +81,6 @@
 
             "sc_breaking_time_main": 0.1,
             "sc_breaking_time_rsrv": 0.3
-
 
         }            
     }

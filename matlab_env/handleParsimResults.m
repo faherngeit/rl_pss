@@ -15,7 +15,7 @@ for sampnum = size(simoutputs,2):-1:1
     rewards_noagent = zeros(1,size(simoutputs(sampnum).A_state,3));
                 
     % Расчет времени между действиями агента
-    actionTimeStep = 1.0 / config.Matlab.Model.AgentModel.agentTs_den;
+    actionTimeStep = 1.0 / config.Matlab.Model.AgentModel.agentTs_num;
 
     for actionnum = 1:size(simoutputs(sampnum).A_state,3)
         % Поиск индекса момента времени, которому соответствует
