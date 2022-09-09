@@ -3,6 +3,7 @@ from telegram.ext import Updater, CallbackContext, CommandHandler
 from telegram import Update
 import json
 import subprocess
+from sys import executable
 
 
 CREDEDENTIALS_PATH = "telegram_creds.json"
@@ -18,7 +19,7 @@ def start(update: Update, context: CallbackContext):
 def run_app(update: Update, context: CallbackContext):
     global app_process
     with open('telegram_app.log', 'w') as log_file:
-        app_process = subprocess.Popen(["python3", "rest_agent/app.py"], stdout=log_file, stderr=log_file)
+        app_process = subprocess.Popen([executable, "rest_agent/app.py"], stdout=log_file, stderr=log_file)
     context.bot.send_message(chat_id=update.effective_chat.id, text="Agent app.py is started!")
 
 
@@ -34,7 +35,7 @@ def stop_app(update: Update, context: CallbackContext):
 def run_train(update: Update, context: CallbackContext):
     global train_process
     with open('telegram_train.log', 'w') as log_file:
-        train_process = subprocess.Popen(["python3", "rest_agent/train.py", "--telegram", "telegram_creds.json"], stdout=log_file, stderr=log_file)
+        train_process = subprocess.Popen([executable, "rest_agent/train.py", "--telegram", "telegram_creds.json"], stdout=log_file, stderr=log_file)
     context.bot.send_message(chat_id=update.effective_chat.id, text="Agent train.py is started!")
 
 

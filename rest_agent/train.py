@@ -89,7 +89,7 @@ def compute_lambda_returns_and_gae(trajectory):
 
 
 class OSBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernels=[1, 3, 5, 7, 11]):
+    def __init__(self, in_channels, out_channels, kernels=(1, 3, 5, 7, 11)):
         super().__init__()
         assert out_channels % 2 == 0, "Numnber of out channels should be odd!"
         self.kernels = kernels
