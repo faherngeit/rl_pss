@@ -1,4 +1,6 @@
 from os import path
+from io import StringIO
+from shutil import copyfileobj
 import numpy as np
 import torch
 from torch import nn
@@ -11,9 +13,11 @@ import matlab.engine
 import json
 import requests
 import argparse
+import logging
 
 from utils import AgentDescription
 
+logging.basicConfig(filename='train.log', level=logging.DEBUG)
 CONFIG_PATH = "general_config.json"
 configuration = AgentDescription.from_file(CONFIG_PATH)
 
@@ -28,7 +32,7 @@ ENTROPY_COEF = 2e-2
 BATCHES_PER_UPDATE = 512
 BATCH_SIZE = 128
 
-EPISODES_PER_UPDATE = 30
+EPISODES_PER_UPDATE = 2
 ITERATIONS = 200
 
 
@@ -349,13 +353,13 @@ def start(load_model=None, telegram=None):
         update_agent_remote(config, load_model)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent was loaded from {path.join(config.agentPath, load_model)}"
         log_both_telegram(msg, telegram)
-        print(msg)
+        logging.info(msg)
     else:
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] New agent was saved in {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
         log_both_telegram(msg, telegram)
-        print(msg)
+        logging.info(msg)
     log_str = []
 
     splt_str = '\n' + '#' * 80 + '\n'
@@ -374,20 +378,22 @@ def start(load_model=None, telegram=None):
                "\n"
     log_str.append(strt_msg)
     log_both_telegram(strt_msg, telegram)
-
-    with open(path.join(configuration.logPath, "train_log.txt"), "a") as myfile:
-        myfile.write('\n'.join(log_str))
+    logging.info(strt_msg)
 
     msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
 
     log_both_telegram(msg, telegram)
-    print(msg)
+    logging.info(msg)
 
-    with open(path.join(configuration.logPath, "train_log.txt"), "a") as myfile:
-        myfile.write(msg + '\n')
-
+    matlab_log = StringIO()
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, 'log', 'error')
+        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, 'log', 'error',
+                                 stdout=matlab_log, stderr=matlab_log)
+
+        with open(config.matlabLogPath, "a") as log:
+            matlab_log.seek(0)
+            copyfileobj(matlab_log, log)
+
         with open(path.join(configuration.logPath, "trajectory_log.txt"), 'r') as file:
             data = json.load(file)
         trajectories = create_trajectory(data)
@@ -401,7 +407,7 @@ def start(load_model=None, telegram=None):
         {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f} "
 
         log_both_telegram(msg, telegram)
-        print(msg)
+        logging.info(msg)
 
 
 if __name__ == "__main__":

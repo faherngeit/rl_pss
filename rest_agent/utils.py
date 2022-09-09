@@ -18,6 +18,7 @@ class AgentDescription:
     agentNamePrefix: str
     device: str
     default_path: str = path.normpath(path.join("..", "general_config.json"))
+    matlabLogPath: str = ""
 
     @staticmethod
     def from_file(path: str):
