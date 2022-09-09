@@ -17,6 +17,7 @@ class AgentDescription:
     logPath: str
     agentNamePrefix: str
     device: str
+    unstablePenalty: int
     default_path: str = path.normpath(path.join("..", "general_config.json"))
     matlabLogPath: str = ""
 

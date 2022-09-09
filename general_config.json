@@ -12,7 +12,8 @@
         "agentNamePrefix": "agent",
         "actionScaler": [100, 1, 1, 10, 10],
         "device": "cpu",
-        "matlabLogPath": "matlab.log"
+        "matlabLogPath": "matlab.log",
+        "unstablePenalty": 1000
     },
     "Matlab": {
         "Model": {

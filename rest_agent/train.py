@@ -17,7 +17,7 @@ import logging
 
 from utils import AgentDescription
 
-logging.basicConfig(filename='train.log', level=logging.DEBUG)
+logging.basicConfig(filename='train.log', level=logging.DEBUG, datefmt='[%Y-%m-%d %H:%M:%S]', format='%(asctime)s %(message)s')
 CONFIG_PATH = "general_config.json"
 configuration = AgentDescription.from_file(CONFIG_PATH)
 
@@ -68,7 +68,7 @@ def log_both_telegram(message, config):
     url = f"https://api.telegram.org/bot{config['token']}/sendMessage?chat_id={config['chat_id']}&text={message}"
     response = requests.get(url)
     if response.status_code != 200:
-        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Error sending telegram message")
+        logging.warning("Error sending telegram message")
     return
 
 
@@ -333,9 +333,9 @@ def create_trajectory(data: list):
 def update_agent_remote(config, path=""):
     response = requests.get(config.get_reload_url(path))
     if response.status_code == 200:
-        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Agent updated")
+        logging.info("Agent updated")
     else:
-        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Error reloading agent")
+        logging.warning("Error reloading agent")
     return
 
 
@@ -357,7 +357,7 @@ def start(load_model=None, telegram=None):
     else:
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
         update_agent_remote(config)
-        msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] New agent was saved in {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
+        msg = f"New agent was saved in {path.join(config.agentPath, config.agentNamePrefix + '_last.pth')}"
         log_both_telegram(msg, telegram)
         logging.info(msg)
     log_str = []
@@ -366,28 +366,29 @@ def start(load_model=None, telegram=None):
     log_str.append(splt_str)
     if load_model:
         log_str.append("Pretrained model has been loaded!\n")
-    strt_msg = f"Model uses {ppo.device}\n Lambda = {LAMBDA}\nGamma = {GAMMA}\n" \
-               f"Actor_lr = {ACTOR_LR}\n" \
-               f"Critic_LR = {CRITIC_LR}\n" \
-               f"Clip = {CLIP}\n" \
-               f"Entropy_coef = {ENTROPY_COEF}\n" \
-               f"Batches per update = {BATCHES_PER_UPDATE}\n" \
-               f"Batch size = {BATCH_SIZE}\n" \
-               f"Episode per update = {EPISODES_PER_UPDATE}\n" \
-               f"Irerations = {ITERATIONS}\n" \
+    strt_msg = f"Model uses {ppo.device}\n    Lambda = {LAMBDA}\n    Gamma = {GAMMA}\n" \
+               f"    Actor_lr = {ACTOR_LR}\n" \
+               f"    Critic_LR = {CRITIC_LR}\n" \
+               f"    Clip = {CLIP}\n" \
+               f"    Entropy_coef = {ENTROPY_COEF}\n" \
+               f"    Batches per update = {BATCHES_PER_UPDATE}\n" \
+               f"    Batch size = {BATCH_SIZE}\n" \
+               f"    Episode per update = {EPISODES_PER_UPDATE}\n" \
+               f"    Irerations = {ITERATIONS}\n" \
+               f"    Penalty = {configuration.unstablePenalty}\n" \
                "\n"
     log_str.append(strt_msg)
     log_both_telegram(strt_msg, telegram)
     logging.info(strt_msg)
 
-    msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Learning on {ppo.device} starts!"
+    msg = f"Learning on {ppo.device} starts!"
 
     log_both_telegram(msg, telegram)
     logging.info(msg)
 
     matlab_log = StringIO()
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+03, EPISODES_PER_UPDATE, 'log', 'error',
+        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', configuration.unstablePenalty, EPISODES_PER_UPDATE, 'log', 'error',
                                  stdout=matlab_log, stderr=matlab_log)
 
         with open(config.matlabLogPath, "a") as log:
