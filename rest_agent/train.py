@@ -387,7 +387,7 @@ def start(load_model=None, telegram=None):
 
     matlab_log = StringIO()
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+06, EPISODES_PER_UPDATE, 'log', 'error',
+        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', 1.0e+03, EPISODES_PER_UPDATE, 'log', 'error',
                                  stdout=matlab_log, stderr=matlab_log)
 
         with open(config.matlabLogPath, "a") as log:
