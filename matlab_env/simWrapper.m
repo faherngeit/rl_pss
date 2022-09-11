@@ -7,4 +7,6 @@ result = getScenarioSimOutData(scenarios_file, exp_num, reward_type, penalty, re
 
 % Запакова в JSON и отправка на сервер-агент
 serverResponse = sendResultWrapper(result);
+
+clear result;
 end
