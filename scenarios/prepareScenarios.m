@@ -1,6 +1,8 @@
 function [scenarios_NormStates, ...
-          scenarios_LinesSCB]   = prepareScenarios(states_quantity,model)
+          scenarios_1phSCg]   = prepareScenarios(states_quantity,model)
 % Метод формирует список сценариев для моделирования при обучении
+% , ...
+%           scenarios_LinesSCB
 %           scenarios_1phSCg, ...
 %           scenarios_2phSCg_gen, ...
 %           scenarios_3phSCgen
@@ -17,31 +19,31 @@ end
 scenarios = scenarios_NormStates;
 save("scenarios_NormalStates.mat","scenarios");
 
-% Отключение ВЛ
-Events_Line = prepareEvents_Line(statesNorm(1).model, config);
-scenarios_line = prepareSimParam_Events(statesNorm, Events_Line);
-scenarios_line = prepareOutputData(model,scenarios_line, false); 
-scenarios_LinesSCB = [scenarios_NormStates, scenarios_line];
-% Переключения БСК
-Events_SCB = prepareEvents_SCB(statesNorm(1).model, config);
-scenarios_SCB = prepareSimParam_Events(statesNorm, Events_SCB);
-scenarios_SCB = prepareOutputData(model,scenarios_SCB, false);
-scenarios_LinesSCB = [scenarios_LinesSCB, scenarios_SCB];
-scenarios = scenarios_LinesSCB;
-save("scenarios_LineSCB.mat","scenarios");
+% % Отключение ВЛ
+% Events_Line = prepareEvents_Line(statesNorm(1).model, config);
+% scenarios_line = prepareSimParam_Events(statesNorm, Events_Line);
+% scenarios_line = prepareOutputData(model,scenarios_line, false); 
+% scenarios_LinesSCB = [scenarios_NormStates, scenarios_line];
+% % Переключения БСК
+% Events_SCB = prepareEvents_SCB(statesNorm(1).model, config);
+% scenarios_SCB = prepareSimParam_Events(statesNorm, Events_SCB);
+% scenarios_SCB = prepareOutputData(model,scenarios_SCB, false);
+% scenarios_LinesSCB = [scenarios_LinesSCB, scenarios_SCB];
+% scenarios = scenarios_LinesSCB;
+% save("scenarios_LineSCB.mat","scenarios");
 
-% % 1ф КЗ на ВЛ, время отключения ОЗ
-% Events_1phSCg_line_main = prepareEvents_1phSCg_A_3ph_line(statesNorm(1).model, config, 1);
-% scenarios_1phSCg_line_main = prepareSimParam_Events(statesNorm, Events_1phSCg_line_main);
-% scenarios_1phSCg_line_main = prepareOutputData(model,scenarios_1phSCg_line_main, false); 
-% scenarios_1phSCg = [scenarios_LinesSCB, scenarios_1phSCg_line_main];
-% % 1ф КЗ на ВЛ, время отключения РЗ
-% Events_1phSCg_line_rsrv = prepareEvents_1phSCg_A_3ph_line(statesNorm(1).model, config, 2);
-% scenarios_1phSCg_line_rsrv = prepareSimParam_Events(statesNorm, Events_1phSCg_line_rsrv);
-% scenarios_1phSCg_line_rsrv = prepareOutputData(model,scenarios_1phSCg_line_rsrv, false); 
-% scenarios_1phSCg = [scenarios_1phSCg, scenarios_1phSCg_line_rsrv];
-% scenarios = scenarios_1phSCg;
-% save("scenarios_1phSC.mat","scenarios");
+% 1ф КЗ на ВЛ, время отключения ОЗ
+Events_1phSCg_line_main = prepareEvents_1phSCg_A_3ph_line(statesNorm(1).model, config, 1);
+scenarios_1phSCg_line_main = prepareSimParam_Events(statesNorm, Events_1phSCg_line_main);
+scenarios_1phSCg_line_main = prepareOutputData(model,scenarios_1phSCg_line_main, false); 
+scenarios_1phSCg = [scenarios_NormStates, scenarios_1phSCg_line_main];
+% 1ф КЗ на ВЛ, время отключения РЗ
+Events_1phSCg_line_rsrv = prepareEvents_1phSCg_A_3ph_line(statesNorm(1).model, config, 2);
+scenarios_1phSCg_line_rsrv = prepareSimParam_Events(statesNorm, Events_1phSCg_line_rsrv);
+scenarios_1phSCg_line_rsrv = prepareOutputData(model,scenarios_1phSCg_line_rsrv, false); 
+scenarios_1phSCg = [scenarios_1phSCg, scenarios_1phSCg_line_rsrv];
+scenarios = scenarios_1phSCg;
+save("scenarios_1phSC.mat","scenarios");
 % 
 % % 2ф КЗ на ВЛ, время отключения ОЗ
 % Events_2phSC_AB_line_main = prepareEvents_2phSC_AB_line(statesNorm(1).model, config, 1);

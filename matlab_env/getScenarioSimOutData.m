@@ -76,4 +76,9 @@ for scennum = size(scenarios, 2):-1:1
                                         simoutputs(scennum), reward_type, results_directory, "_" + num2str(scennum));
 end
 
+clear scens;
+clear scenarios;
+clear simInputs;
+clear simOutputs;
+
 end
