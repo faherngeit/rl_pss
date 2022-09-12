@@ -20,6 +20,9 @@ class AgentDescription:
     unstablePenalty: int
     default_path: str = path.normpath(path.join("..", "general_config.json"))
     matlabLogPath: str = ""
+    loadAgent: str = ""
+    scenariosDestination: str = ""
+    rewardFunction: str = ""
 
     @staticmethod
     def from_file(path: str):

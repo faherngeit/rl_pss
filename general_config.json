@@ -13,7 +13,10 @@
         "actionScaler": [100, 1, 1, 10, 10],
         "device": "cpu",
         "matlabLogPath": "matlab.log",
-        "unstablePenalty": 1000
+        "unstablePenalty": 1000,
+        "loadAgent": "agent_last.pth",
+        "scenariosDestination": "scenarios_1phSC",
+        "rewardFunction": "IntMaxDeltaWs"
     },
     "Matlab": {
         "Model": {

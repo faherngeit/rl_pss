@@ -339,10 +339,9 @@ def update_agent_remote(config, path=""):
     return
 
 
-def start(load_model=None, telegram=None):
+def start(config, load_model=None, telegram=None):
     torch.manual_seed(12345)
     np.random.seed(3141592)
-    config = AgentDescription.from_file(CONFIG_PATH)
     eng = matlab.engine.start_matlab()
     eng.cd("./matlab_env/")
 
@@ -388,7 +387,8 @@ def start(load_model=None, telegram=None):
 
     matlab_log = StringIO()
     for i in range(ITERATIONS):
-        request = eng.simWrapper('scenarios_LineSCB', 'IntMaxDeltaWs', configuration.unstablePenalty, EPISODES_PER_UPDATE, 'log', 'error',
+        request = eng.simWrapper(config.scenariosDestination, config.rewardFunction, configuration.unstablePenalty,
+                                 EPISODES_PER_UPDATE, 'log', 'error',
                                  stdout=matlab_log, stderr=matlab_log)
 
         with open(config.matlabLogPath, "a") as log:
@@ -413,12 +413,16 @@ def start(load_model=None, telegram=None):
 
 if __name__ == "__main__":
     args = get_arguments()
+    config = AgentDescription.from_file(CONFIG_PATH)
     telegram = None
     if args.telegram:
         with open(args.telegram, 'r') as f:
             telegram = json.load(f)
     try:
-        start(load_model=args.load_model, telegram=telegram)
+        if config.loadAgent:
+            start(config, load_model=config.loadAgent, telegram=telegram)
+        else:
+            start(config, load_model=args.load_model, telegram=telegram)
     except Exception as e:
         log_both_telegram(f"Error: {e}", telegram)
         raise e
