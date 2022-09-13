@@ -14,7 +14,6 @@
         "device": "cpu",
         "matlabLogPath": "matlab.log",
         "unstablePenalty": 1000,
-        "loadAgent": "agent_last.pth",
         "scenariosDestination": "scenarios_1phSC",
         "rewardFunction": "IntMaxDeltaWs"
     },
