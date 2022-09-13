@@ -5,7 +5,7 @@ simLog = scenario;
 % Записываются результаты моделирования с агентом
 simLog.simOut_agent = simoutputs;
 % Вычисляется и записывается награда 
-simLog.reward_agent = get_reward(simoutputs, true, reward_type);
+simLog.reward_agent = get_reward(simoutputs, false, reward_type);
 % Записывается информция о работе агента (пусть будет): state, actions, reward
 simLog.result_agent = results;
 
