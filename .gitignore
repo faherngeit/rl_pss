@@ -42,3 +42,9 @@ scenarios/slprj/_jitprj/jitEngineAccessInfo.mat
 matlab_env/power_PSS_modif.slxc
 power_PSS_modif.slxc
 matlab_env/handleParsimResults.asv
+scenarios/scenarios_1.mat
+scenarios/scenarios_2.mat
+scenarios/scenarios_3.mat
+scenarios/scenarios_4.mat
+scenarios/scenarios_5.mat
+matlab_env/power_PSS_modif.slx.autosave

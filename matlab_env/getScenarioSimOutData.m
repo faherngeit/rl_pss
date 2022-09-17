@@ -8,7 +8,7 @@ function [result, simLog] = getScenarioSimOutData(scenarios_file, scen_quan, rew
 %                      сгенерированные заранее объекты SimulationInput
 %   scen_quan        - число рассматриваемых сценариев.
 %   reward_type      - тип рассчитываемой награды 
-%                      (пиши 'IntMaxDeltaWs' - не   ошибешься)
+%                      ('IntMaxDeltaWs')
 %   penalty          - штраф за нарушение устойчивости
 %   result_directory - директория сохранения результатов. Если указано "",
 %                      то файлы не сохраняются.
