@@ -131,7 +131,7 @@ events(1).KZ_A1_G1_HV.PhaseG = 'on';
 
 % Описание события
 events(2).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ на ВН Г2. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ на ВН Г2
 events(2).KZ_A1_G2_HV.Times  = [dist_moment, dist_moment + t_breaking];
 events(2).KZ_A1_G2_HV.PhaseA = 'on';
@@ -141,7 +141,7 @@ events(2).KZ_A1_G2_HV.PhaseG = 'on';
 
 % Описание события
 events(3).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ на ВН Г3. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ на ВН Г3
 events(3).KZ_A2_G3_HV.Times  = [dist_moment, dist_moment + t_breaking];
 events(3).KZ_A2_G3_HV.PhaseA = 'on';
@@ -151,7 +151,7 @@ events(3).KZ_A2_G3_HV.PhaseG = 'on';
 
 % Описание события
 events(4).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ на ВН Г4. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ на ВН Г4
 events(4).KZ_A2_G4_HV.Times  = [dist_moment, dist_moment + t_breaking];
 events(4).KZ_A2_G4_HV.PhaseA = 'on';
@@ -161,7 +161,7 @@ events(4).KZ_A2_G4_HV.PhaseG = 'on';
 
 % Описание события
 events(5).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ в начале ВЛ-1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ в начале ВЛ1
 events(5).KZ_Lb.Times  = [dist_moment, dist_moment + t_breaking];
 events(5).KZ_Lb.PhaseA = 'on';
@@ -179,7 +179,7 @@ events(5).Br_Line_end.PhaseC = 'on';
 
 % Описание события
 events(6).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ в середине ВЛ-1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ в середине ВЛ1
 events(6).KZ_Lm.Times  = [dist_moment, dist_moment + t_breaking];
 events(6).KZ_Lm.PhaseA = 'on';
@@ -197,7 +197,7 @@ events(6).Br_Line_end.PhaseC = 'on';
 
 % Описание события
 events(7).EventDescription = "Событие: \n" + ...
-                             "3фКЗ на ВН Г1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
+                             "3фКЗ в конце ВЛ-1. T_кз = " + dist_moment + " с, " + "T_откл = " + t_breaking + " с, \n";
 % 3ф КЗ в конце ВЛ1
 events(7).KZ_Le.Times  = [dist_moment, dist_moment + t_breaking];
 events(7).KZ_Le.PhaseA = 'on';

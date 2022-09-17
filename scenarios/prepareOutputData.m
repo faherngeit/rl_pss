@@ -8,7 +8,7 @@ function scenarios = prepareOutputData(model,scenarios,saveOutPut)
     
     
     % Сбор результатов для сценариев.
-    results_0 = parsim(scens);
+    results_0 = sim(scens);
     
     % По всем сценариеям записываются результаты и награды
     for scennum = 1:size(scenarios,2)
@@ -18,6 +18,6 @@ function scenarios = prepareOutputData(model,scenarios,saveOutPut)
             scenarios(scennum).simOut_0 = [];
         end
     
-        scenarios(scennum).reward_0 = get_reward(results_0(scennum), true, 'IntMaxDeltaWs');
+        scenarios(scennum).reward_0 = get_reward(results_0(scennum), false, 'IntMaxDeltaWs');
     end
 end
