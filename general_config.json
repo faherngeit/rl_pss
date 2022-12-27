@@ -16,7 +16,7 @@
         "unstablePenalty": 1000,
         "scenariosDestination": "scenarios_1phSC",
         "rewardFunction": "IntMaxDeltaWs",
-        "loadAgent": "agent_last.pth"
+        "loadAgent": ""
     },
     "Matlab": {
         "Model": {
