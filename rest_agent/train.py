@@ -14,10 +14,11 @@ import json
 import requests
 import argparse
 import logging
+import sys
 
 from utils import AgentDescription
 
-logging.basicConfig(filename='train.log', level=logging.DEBUG, datefmt='[%Y-%m-%d %H:%M:%S]', format='%(asctime)s %(message)s')
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, datefmt='[%Y-%m-%d %H:%M:%S]', format='%(asctime)s %(message)s')
 CONFIG_PATH = "general_config.json"
 configuration = AgentDescription.from_file(CONFIG_PATH)
 
@@ -32,7 +33,7 @@ ENTROPY_COEF = 2e-2
 BATCHES_PER_UPDATE = 2048
 BATCH_SIZE = 64
 
-EPISODES_PER_UPDATE = 20
+EPISODES_PER_UPDATE = 1
 ITERATIONS = 300
 
 
@@ -138,13 +139,60 @@ class Encoder(nn.Module):
         x = self.linear(x.view(x.shape[0], -1))
         return x
 
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, internal_chanels, stride = 1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Sequential(
+                        nn.Conv1d(in_channels, internal_chanels, kernel_size = 3, stride = stride, padding = 1),
+                        nn.BatchNorm1d(internal_chanels),
+                        nn.ReLU())
+        self.conv2 = nn.Sequential(
+                        nn.Conv1d(internal_chanels, internal_chanels, kernel_size = 3, stride = 1, padding = 1),
+                        nn.BatchNorm1d(internal_chanels))
+        self.downsampls = nn.Sequential(
+                        nn.Conv1d(internal_chanels, in_channels, kernel_size = 3, stride = 1, padding = 1),
+                        nn.BatchNorm1d(in_channels))
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out = self.downsampls(out)
+
+        out += residual
+        out = self.relu(out)
+        return out
+
+
+class ResNetEncoder(nn.Module):
+    def __init__(self, in_channels, internal_chanels, embed_size, length):
+        super(ResNetEncoder, self).__init__()
+        self.convnet = nn.Sequential(
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+            nn.Flatten()
+        )
+
+        self.linear = nn.Sequential(
+            nn.Linear(in_channels * length, embed_size),
+            nn.ReLU())
+
+    def forward(self, x):
+        out = self.convnet(x)
+        out = self.linear(out)
+        return out
+
+
 
 class Actor(nn.Module):
     def __init__(self, action_dim, action_scaler):
         super().__init__()
         # Advice: use same log_sigma for all states to improve stability
         # You can do this by defining log_sigma as nn.Parameter(torch.zeros(...))
-        self.encoder = Encoder(4, 60, 128)
+        # self.encoder = Encoder(4, 60, 128)
+        self.encoder = ResNetEncoder(4, 16, 128, 60)
         self.mean = torch.nn.Sequential(
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
@@ -181,7 +229,7 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self):
         super().__init__()
-        self.encoder = Encoder(4, 60, 128)
+        self.encoder = ResNetEncoder(4, 16, 128, 60)
         self.mean = torch.nn.Sequential(
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
