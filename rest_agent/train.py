@@ -25,8 +25,10 @@ configuration = AgentDescription.from_file(CONFIG_PATH)
 LAMBDA = 0.95
 GAMMA = 0.99
 
+# ACTOR_LR = 8e-4
+# CRITIC_LR = 2e-4
 ACTOR_LR = 8e-4
-CRITIC_LR = 2e-4
+CRITIC_LR = 1e-4
 
 CLIP = 0.2
 ENTROPY_COEF = 2e-2
@@ -34,7 +36,9 @@ BATCHES_PER_UPDATE = 2048
 BATCH_SIZE = 64
 
 EPISODES_PER_UPDATE = 1
-ITERATIONS = 300
+ITERATIONS = 1000
+
+best_reward_ratio = 1.5 #Награда за лучший эпизод в течение запуска. Определяется как r_agent / r_noAgent
 
 
 def get_arguments():
@@ -317,10 +321,12 @@ class PPO:
 
     def save(self, name="agent.pkl", folder=""):
         torch.save(self.actor.state_dict(), path.join(folder, name))
+        # torch.save(self.critic.state_dict(), path.join(folder, name + '_critic'))
         torch.save(self.critic.state_dict(), path.join(folder, 'critic_' + name))
 
     def load(self, name="agent.pkl", folder=""):
         self.actor.load_state_dict(torch.load(path.join(folder, name)))
+        # self.critic.load_state_dict(torch.load(path.join(folder, name + '_critic')))
         self.critic.load_state_dict(torch.load(path.join(folder, 'critic_' + name)))
         self.actor.eval()
         self.critic.eval()
@@ -421,7 +427,7 @@ def start(config, load_model=None, telegram=None):
                f"    Batches per update = {BATCHES_PER_UPDATE}\n" \
                f"    Batch size = {BATCH_SIZE}\n" \
                f"    Episode per update = {EPISODES_PER_UPDATE}\n" \
-               f"    Irerations = {ITERATIONS}\n" \
+               f"    Iterations = {ITERATIONS}\n" \
                f"    Penalty = {configuration.unstablePenalty}\n" \
                "\n"
     log_str.append(strt_msg)
@@ -448,10 +454,17 @@ def start(config, load_model=None, telegram=None):
         trajectories = create_trajectory(data)
 
         actor_loss, critic_loss = ppo.update(trajectories)
-        ppo.save(name=config.agentNamePrefix + "_last.pth", folder=config.agentPath)
+        ppo.save(name=config.agentNamePrefix + "_last.pth", folder = config.agentPath)
         update_agent_remote(config)
         sum_reward = sum([x['reward'] for y in data for x in y['data']]) / len(data)
         reference_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
+
+        global best_reward_ratio
+        # Сохраним веса лучшего варианта на текущий момент
+        if ((sum_reward / reference_reward) <= best_reward_ratio):
+            best_reward_ratio = sum_reward / reference_reward
+            ppo.save(f"Step_{i + 1}_{datetime.now():%Y-%m-%d-%H-%M-%S}.pth", folder = config.agentPath )
+
         msg = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Step: {i + 1}, Reward mean: {sum_reward:.4f}, No agent reward: \
         {reference_reward:.4f}, Actror loss: {actor_loss:.4f}, Critic loss: {critic_loss:.4f} "
 
