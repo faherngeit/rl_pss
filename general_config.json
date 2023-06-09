@@ -14,9 +14,9 @@
         "device": "cpu",
         "matlabLogPath": "matlab.log",
         "unstablePenalty": 1000,
-        "scenariosDestination": "minRewardSCB_1scen",
+        "scenariosDestination": "scenarios_3phSC_201n_NR",
         "rewardFunction": "IntMaxDeltaWs",
-        "loadAgent": ""
+        "loadAgent": "agent_last.pth"
     },
     "Matlab": {
         "Model": {
@@ -27,9 +27,9 @@
                 "Tw": 1
             },
             "AgentModel": {
-                "agentTs_num": 6,
+                "agentTs_num": 12,
                 "agentTs_den": 60,
-                "threshold": "1+1/6",
+                "threshold": "1+1/12",
                 "initPSSParams": [1, 1, 1, 1, 1]
             },
             "LineParameters": {

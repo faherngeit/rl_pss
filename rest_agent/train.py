@@ -22,23 +22,30 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, datefmt='[%Y-%m-%d %
 CONFIG_PATH = "general_config.json"
 configuration = AgentDescription.from_file(CONFIG_PATH)
 
-LAMBDA = 0.95
+# LAMBDA = 0.95
+LAMBDA = 0.7
 GAMMA = 0.99
 
 # ACTOR_LR = 8e-4
 # CRITIC_LR = 2e-4
-ACTOR_LR = 8e-4
+
+# До 03.05 16:22
+ACTOR_LR = 2e-4
 CRITIC_LR = 1e-4
+
+# ACTOR_LR = 5e-5
+# CRITIC_LR = 5e-5
 
 CLIP = 0.2
 ENTROPY_COEF = 2e-2
-BATCHES_PER_UPDATE = 2048
+# BATCHES_PER_UPDATE = 2048
+BATCHES_PER_UPDATE = 8
 BATCH_SIZE = 64
 
 EPISODES_PER_UPDATE = 1
 ITERATIONS = 1000
 
-best_reward_ratio = 1.5 #Награда за лучший эпизод в течение запуска. Определяется как r_agent / r_noAgent
+best_reward_ratio = 5 #Награда за лучший эпизод в течение запуска. Определяется как r_agent / r_noAgent
 
 
 def get_arguments():
@@ -173,9 +180,16 @@ class ResNetEncoder(nn.Module):
     def __init__(self, in_channels, internal_chanels, embed_size, length):
         super(ResNetEncoder, self).__init__()
         self.convnet = nn.Sequential(
+            #Было три, стало 6
+
             ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
             ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
             ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+            ResidualBlock(in_channels=in_channels, internal_chanels=internal_chanels),
+    
             nn.Flatten()
         )
 
@@ -208,7 +222,13 @@ class Actor(nn.Module):
         #     nn.ELU()
         # )
         self.action_scaler = torch.tensor(action_scaler, dtype=torch.float32)
-        self.sigma = nn.Parameter(torch.zeros(action_dim))
+        # self.sigma = nn.Parameter(torch.zeros(action_dim))
+        self.sigma = torch.nn.Sequential(
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, action_dim),
+            torch.nn.ReLU(),
+        )
 
     def compute_proba(self, state, action):
         # Returns probability of action according to current policy and distribution of actions
@@ -222,7 +242,8 @@ class Actor(nn.Module):
         latent = self.encoder(state)
         mean = self.mean(latent)
         # sigma = torch.exp(-self.sigma(latent))
-        sigma = torch.exp(self.sigma)
+        # sigma = torch.exp(self.sigma)
+        sigma = torch.exp(-self.sigma(latent))
         distribution = Normal(mean, sigma)
         action = distribution.sample()
         tanh_action = torch.sigmoid(action) * self.action_scaler
@@ -453,9 +474,11 @@ def start(config, load_model=None, telegram=None):
             data = json.load(file)
         trajectories = create_trajectory(data)
 
+        # actor_loss, critic_loss = 0.0
         actor_loss, critic_loss = ppo.update(trajectories)
         ppo.save(name=config.agentNamePrefix + "_last.pth", folder = config.agentPath)
         update_agent_remote(config)
+
         sum_reward = sum([x['reward'] for y in data for x in y['data']]) / len(data)
         reference_reward = sum([x['reward_noAgent'] for y in data for x in y['data']]) / len(data)
 

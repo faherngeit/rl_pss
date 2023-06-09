@@ -8,6 +8,7 @@ for sampnum = size(simoutputs,2):-1:1
     simStopTime = simoutputs(sampnum).SimulationMetadata.ModelInfo.StopTime;
     % Расчет полной траектории награды
     raw_reward  = get_reward(simoutputs(sampnum), false, reward_type);
+%     raw_reward  = get_reward(simoutputs(sampnum), true, reward_type);
     % Получение награды без агента
     reward_0    = scenarios(sampnum).reward_0;
     % Инициализация массиво наград с агнетом и без агента
